@@ -34,7 +34,25 @@ export default function SettingsPage() {
       return;
     }
 
-    const rawText = await selectedFile.text();
+    const confirmed = window.confirm(
+      "La importación va a reemplazar todos los leads actuales en este navegador. ¿Querés continuar?",
+    );
+
+    if (!confirmed) {
+      event.target.value = "";
+      return;
+    }
+
+    let rawText = "";
+
+    try {
+      rawText = await selectedFile.text();
+    } catch {
+      setFeedback({ type: "error", message: "No se pudo leer el archivo seleccionado." });
+      event.target.value = "";
+      return;
+    }
+
     const parsed = importLeadsFromJson(rawText);
 
     if (!parsed.leads) {
