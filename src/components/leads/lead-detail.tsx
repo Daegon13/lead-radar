@@ -7,6 +7,33 @@ import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { Lead, LeadFormValues } from "@/types/lead";
 import { StatusQuickActions } from "@/components/leads/status-quick-actions";
 
+const DIGITAL_QUALITY_LABELS: Record<Lead["digitalPresenceQuality"], string> = {
+  none: "Sin presencia",
+  weak: "Débil",
+  acceptable: "Aceptable",
+  strong: "Fuerte",
+};
+
+const COMMERCIAL_POTENTIAL_LABELS: Record<Lead["commercialPotential"], string> = {
+  low: "Bajo",
+  medium: "Medio",
+  high: "Alto",
+};
+
+const DECISION_ACCESS_LABELS: Record<Lead["decisionMakerAccess"], string> = {
+  none: "Sin acceso",
+  gatekeeper: "Con filtro",
+  reachable: "Alcanzable",
+  direct: "Directo",
+};
+
+const URGENCY_LABELS: Record<Lead["urgencySignal"], string> = {
+  none: "Nula",
+  low: "Baja",
+  medium: "Media",
+  high: "Alta",
+};
+
 const BREAKDOWN_LABELS = {
   visibleDemand: "Demanda visible",
   digitalGap: "Brecha digital",
@@ -101,8 +128,40 @@ export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
               <div><dt className="text-zinc-500">Rating</dt><dd>{lead.rating ?? "Sin dato"}</dd></div>
               <div><dt className="text-zinc-500">Reseñas</dt><dd>{lead.reviewCount}</dd></div>
               <div><dt className="text-zinc-500">Sitio web</dt><dd>{lead.hasWebsite ? "Sí" : "No"}</dd></div>
-              <div><dt className="text-zinc-500">URL sitio</dt><dd><OptionalText value={lead.websiteUrl} /></dd></div>
-              <div><dt className="text-zinc-500">Instagram</dt><dd><OptionalText value={lead.instagram} /></dd></div>
+              <div>
+                <dt className="text-zinc-500">URL sitio</dt>
+                <dd>
+                  {lead.websiteUrl ? (
+                    <a
+                      href={lead.websiteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+                    >
+                      {lead.websiteUrl}
+                    </a>
+                  ) : (
+                    <OptionalText value={lead.websiteUrl} />
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500">Instagram</dt>
+                <dd>
+                  {lead.instagram ? (
+                    <a
+                      href={lead.instagram}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+                    >
+                      {lead.instagram}
+                    </a>
+                  ) : (
+                    <OptionalText value={lead.instagram} />
+                  )}
+                </dd>
+              </div>
               <div><dt className="text-zinc-500">WhatsApp</dt><dd><OptionalText value={lead.whatsapp} /></dd></div>
               <div><dt className="text-zinc-500">Teléfono</dt><dd><OptionalText value={lead.phone} /></dd></div>
             </dl>
@@ -113,10 +172,10 @@ export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
               Evaluación comercial
             </h2>
             <dl className="grid gap-3 sm:grid-cols-2 text-sm">
-              <div><dt className="text-zinc-500">Calidad digital</dt><dd>{lead.digitalPresenceQuality}</dd></div>
-              <div><dt className="text-zinc-500">Potencial comercial</dt><dd>{lead.commercialPotential}</dd></div>
-              <div><dt className="text-zinc-500">Acceso al decisor</dt><dd>{lead.decisionMakerAccess}</dd></div>
-              <div><dt className="text-zinc-500">Señales de urgencia</dt><dd>{lead.urgencySignal}</dd></div>
+              <div><dt className="text-zinc-500">Calidad digital</dt><dd>{DIGITAL_QUALITY_LABELS[lead.digitalPresenceQuality]}</dd></div>
+              <div><dt className="text-zinc-500">Potencial comercial</dt><dd>{COMMERCIAL_POTENTIAL_LABELS[lead.commercialPotential]}</dd></div>
+              <div><dt className="text-zinc-500">Acceso al decisor</dt><dd>{DECISION_ACCESS_LABELS[lead.decisionMakerAccess]}</dd></div>
+              <div><dt className="text-zinc-500">Señales de urgencia</dt><dd>{URGENCY_LABELS[lead.urgencySignal]}</dd></div>
               <div className="sm:col-span-2"><dt className="text-zinc-500">Observación</dt><dd><OptionalText value={lead.problemObservation} /></dd></div>
             </dl>
           </section>
