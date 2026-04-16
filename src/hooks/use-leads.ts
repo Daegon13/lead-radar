@@ -4,19 +4,34 @@ import { useMemo, useState } from "react";
 
 import { loadOrInitializeLeads, saveLeads } from "@/lib/storage";
 import { scoreLead } from "@/lib/scoring";
-import type { Lead } from "@/types/lead";
+import type { Lead, LeadFormValues } from "@/types/lead";
 
 export type ScoredLead = {
   lead: Lead;
   score: ReturnType<typeof scoreLead>;
 };
 
+function normalizeLead(lead: Lead): Lead {
+  const fallbackTimestamp = new Date().toISOString();
+
+  return {
+    ...lead,
+    hasWebsite: lead.hasWebsite ?? Boolean(lead.websiteUrl),
+    createdAt: lead.createdAt ?? fallbackTimestamp,
+    updatedAt: lead.updatedAt ?? fallbackTimestamp,
+  };
+}
+
 function loadInitialLeads(): Lead[] | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  return loadOrInitializeLeads();
+  return loadOrInitializeLeads().map(normalizeLead);
+}
+
+function createLeadId(): string {
+  return `lead-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function useLeads() {
@@ -51,10 +66,42 @@ export function useLeads() {
     setLeads((currentLeads) => [newLead, ...currentLeads]);
   }
 
+  function createLead(values: LeadFormValues): Lead {
+    const now = new Date().toISOString();
+    const newLead: Lead = {
+      ...values,
+      id: createLeadId(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    addLead(newLead);
+    return newLead;
+  }
+
   function updateLead(updatedLead: Lead) {
     setLeads((currentLeads) =>
       currentLeads.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead)),
     );
+  }
+
+  function updateLeadById(id: string, values: LeadFormValues): Lead | null {
+    const currentLead = getLeadById(id);
+
+    if (!currentLead) {
+      return null;
+    }
+
+    const nextLead: Lead = {
+      ...currentLead,
+      ...values,
+      id: currentLead.id,
+      createdAt: currentLead.createdAt,
+      updatedAt: new Date().toISOString(),
+    };
+
+    updateLead(nextLead);
+    return nextLead;
   }
 
   function getLeadById(id: string): Lead | undefined {
@@ -67,7 +114,9 @@ export function useLeads() {
     isLoaded,
     setLeads,
     addLead,
+    createLead,
     updateLead,
+    updateLeadById,
     getLeadById,
   };
 }

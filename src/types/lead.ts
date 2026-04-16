@@ -29,15 +29,26 @@ export type Lead = {
   businessName: string;
   category: string;
   location: string;
+  address?: string;
   rating: number | null;
   reviewCount: number;
+  hasWebsite: boolean;
+  websiteUrl?: string;
+  instagram?: string;
+  whatsapp?: string;
+  phone?: string;
   digitalPresenceQuality: DigitalPresenceQuality;
   commercialPotential: CommercialPotential;
   decisionMakerAccess: DecisionMakerAccess;
   urgencySignal: UrgencySignal;
+  problemObservation?: string;
   status: LeadStatus;
   nextAction: NextAction;
+  followUpDate?: string;
   notes?: string;
+  demoRecommended?: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type LeadScoreResult = {
@@ -47,3 +58,5 @@ export type LeadScoreResult = {
   summary: string;
   recommendedAction: NextAction;
 };
+
+export type LeadFormValues = Omit<Lead, "id" | "createdAt" | "updatedAt">;
