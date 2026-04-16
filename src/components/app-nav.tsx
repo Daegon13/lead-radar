@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { ENABLE_EXTERNAL_PROSPECTING_FLOW } from "@/lib/constants";
+
 const NAV_ITEMS = [
   { href: "/leads", label: "Leads" },
+  ...(ENABLE_EXTERNAL_PROSPECTING_FLOW ? [{ href: "/prospecting", label: "Prospecting" as const }] : []),
   { href: "/settings", label: "Settings" },
 ] as const;
 

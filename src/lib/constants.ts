@@ -33,3 +33,5 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   won: "Ganado",
   lost: "Perdido",
 };
+
+export const ENABLE_EXTERNAL_PROSPECTING_FLOW = true;
