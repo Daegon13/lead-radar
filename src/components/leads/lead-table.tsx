@@ -63,7 +63,9 @@ export function LeadTable({ leads }: LeadTableProps) {
           {leads.map(({ lead, score }) => (
             <tr key={lead.id} className="border-t border-zinc-100 align-top dark:border-zinc-800">
               <td className="px-4 py-3">
-                <p className="font-medium text-zinc-900 dark:text-zinc-100">{lead.businessName}</p>
+                <Link href={`/leads/${lead.id}`} className="font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100">
+                  {lead.businessName}
+                </Link>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">{lead.location}</p>
               </td>
               <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{lead.category}</td>
@@ -84,12 +86,20 @@ export function LeadTable({ leads }: LeadTableProps) {
               </td>
               <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{formatNextAction(lead.nextAction)}</td>
               <td className="px-4 py-3 text-right">
-                <Link
-                  href={`/leads/${lead.id}/edit`}
-                  className="text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
-                >
-                  Editar
-                </Link>
+                <div className="flex items-center justify-end gap-2">
+                  <Link
+                    href={`/leads/${lead.id}`}
+                    className="text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
+                  >
+                    Ver
+                  </Link>
+                  <Link
+                    href={`/leads/${lead.id}/edit`}
+                    className="text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
+                  >
+                    Editar
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}
