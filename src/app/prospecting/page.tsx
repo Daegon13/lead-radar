@@ -6,6 +6,20 @@ import { FormEvent, useMemo, useState } from "react";
 import { useLeads } from "@/hooks/use-leads";
 import { ENABLE_EXTERNAL_PROSPECTING_FLOW } from "@/lib/constants";
 import {
+  DEFAULT_PROSPECTING_EXECUTION_LIMITS,
+  type HotspotRunRegistry,
+  loadHotspotRunRegistry,
+  planSuggestedHotspotRun,
+  recordHotspotBatchRun,
+  recordHotspotRun,
+} from "@/lib/prospecting-execution-policy";
+import {
+  getEnabledProspectingHotspots,
+  getProspectingFormDefaults,
+  getProspectingHotspotById,
+  type ProspectingHotspot,
+} from "@/lib/prospecting-hotspots";
+import {
   buildLeadDedupKey,
   type ExternalProspectResult,
   mapExternalResultToLeadFormValues,
@@ -20,49 +34,15 @@ type SearchFormState = {
   rubro: string;
 };
 
-type StrategicPoint = {
-  id: string;
-  label: string;
-  lat: string;
-  lng: string;
-  radio: string;
-  rubro?: string;
-};
-
 type ProspectCandidate = {
   id: string;
+  hotspotId?: string;
+  hotspotLabel?: string;
   values: LeadFormValues;
   dedupeReason: "existing" | "batch" | null;
 };
 
 const MANUAL_STRATEGIC_POINT_ID = "manual";
-
-const STRATEGIC_POINTS_CATALOG: StrategicPoint[] = [
-  {
-    id: "microcentro-caba",
-    label: "Microcentro (CABA)",
-    lat: "-34.6036",
-    lng: "-58.3817",
-    radio: "1200",
-    rubro: "Gastronomía",
-  },
-  {
-    id: "palermo-caba",
-    label: "Palermo Soho (CABA)",
-    lat: "-34.5875",
-    lng: "-58.4241",
-    radio: "900",
-    rubro: "Indumentaria",
-  },
-  {
-    id: "nueva-cordoba",
-    label: "Nueva Córdoba (Córdoba)",
-    lat: "-31.4272",
-    lng: "-64.1844",
-    radio: "1000",
-    rubro: "Salud y bienestar",
-  },
-];
 
 function createProspectId(index: number): string {
   return `prospect-${index}-${Math.random().toString(36).slice(2, 8)}`;
@@ -117,8 +97,25 @@ function materializeLead(values: LeadFormValues): Lead {
   };
 }
 
+function formatLastRun(lastRunAt?: string): string {
+  if (!lastRunAt) {
+    return "Sin corridas registradas";
+  }
+
+  const timestamp = Date.parse(lastRunAt);
+  if (Number.isNaN(timestamp)) {
+    return "Sin corridas registradas";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(timestamp));
+}
+
 export default function ProspectingPage() {
   const { leads, createLead, replaceLeads } = useLeads();
+  const enabledHotspots = useMemo(() => getEnabledProspectingHotspots(), []);
   const [form, setForm] = useState<SearchFormState>({
     strategicPointId: MANUAL_STRATEGIC_POINT_ID,
     lat: "",
@@ -126,11 +123,13 @@ export default function ProspectingPage() {
     radio: "",
     rubro: "",
   });
+  const [hotspotRuns, setHotspotRuns] = useState<HotspotRunRegistry>(() => loadHotspotRunRegistry());
   const [candidates, setCandidates] = useState<ProspectCandidate[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const existingKeys = useMemo(() => new Set(leads.map((lead) => buildLeadDedupKey(lead))), [leads]);
+
 
   if (!ENABLE_EXTERNAL_PROSPECTING_FLOW) {
     return (
@@ -158,38 +157,37 @@ export default function ProspectingPage() {
       return;
     }
 
-    const strategicPoint = STRATEGIC_POINTS_CATALOG.find((item) => item.id === value);
-    if (!strategicPoint) {
+    const defaults = getProspectingFormDefaults(value);
+    if (!defaults.lat || !defaults.lng) {
       updateField("strategicPointId", MANUAL_STRATEGIC_POINT_ID);
       return;
     }
 
     setForm((current) => ({
       ...current,
-      strategicPointId: strategicPoint.id,
-      lat: strategicPoint.lat,
-      lng: strategicPoint.lng,
-      radio: strategicPoint.radio,
-      rubro: strategicPoint.rubro ?? current.rubro,
+      strategicPointId: value,
+      lat: defaults.lat,
+      lng: defaults.lng,
+      radio: defaults.radio,
+      rubro: defaults.rubro || current.rubro,
     }));
   }
 
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function buildCandidatesForSearch(
+    searchForm: SearchFormState,
+    options?: {
+      maxCandidates?: number;
+      hotspot?: ProspectingHotspot;
+      startIndex?: number;
+      batchKeys?: Set<string>;
+    },
+  ): ProspectCandidate[] {
+    const maxCandidates = options?.maxCandidates;
+    const externalResults = buildMockExternalResults(searchForm);
+    const limitedResults = typeof maxCandidates === "number" ? externalResults.slice(0, maxCandidates) : externalResults;
+    const batchKeys = options?.batchKeys ?? new Set<string>();
 
-    const lat = Number(form.lat);
-    const lng = Number(form.lng);
-    const radius = Number(form.radio);
-
-    if (!form.rubro.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
-      setFeedback("Completá lat/lng/radio numéricos y rubro para buscar prospectos.");
-      return;
-    }
-
-    const externalResults = buildMockExternalResults(form);
-    const batchKeys = new Set<string>();
-
-    const mappedCandidates = externalResults.map((external, index) => {
+    return limitedResults.map((external, index) => {
       const values = mapExternalResultToLeadFormValues(external);
       const key = buildLeadDedupKey({
         businessName: values.businessName,
@@ -207,15 +205,94 @@ export default function ProspectingPage() {
       batchKeys.add(key);
 
       return {
-        id: createProspectId(index),
+        id: createProspectId((options?.startIndex ?? 0) + index),
+        hotspotId: options?.hotspot?.id,
+        hotspotLabel: options?.hotspot?.label,
         values,
         dedupeReason,
       };
     });
+  }
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const lat = Number(form.lat);
+    const lng = Number(form.lng);
+    const radius = Number(form.radio);
+
+    if (!form.rubro.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
+      setFeedback("Completá lat/lng/radio numéricos y rubro para buscar prospectos.");
+      return;
+    }
+
+    const hotspot = form.strategicPointId !== MANUAL_STRATEGIC_POINT_ID ? getProspectingHotspotById(form.strategicPointId) : undefined;
+    const mappedCandidates = buildCandidatesForSearch(form, { hotspot });
+
+    if (hotspot) {
+      setHotspotRuns(recordHotspotRun(hotspot.id));
+    }
 
     setCandidates(mappedCandidates);
     setSelectedIds(mappedCandidates.filter((item) => item.dedupeReason === null).map((item) => item.id));
     setFeedback(`Se encontraron ${mappedCandidates.length} candidatos simulados para revisar.`);
+  }
+
+  function handleSuggestedRun() {
+    const limits = DEFAULT_PROSPECTING_EXECUTION_LIMITS;
+    const plan = planSuggestedHotspotRun(enabledHotspots, hotspotRuns, limits);
+
+    if (plan.length === 0) {
+      setFeedback("No hay hotspots disponibles para corrida sugerida (todos están en enfriamiento).");
+      return;
+    }
+
+    let indexOffset = 0;
+    let remainingForRun = limits.maxCandidatesPerRun;
+    const batchKeys = new Set<string>();
+    const aggregated: ProspectCandidate[] = [];
+
+    for (const entry of plan) {
+      if (remainingForRun <= 0) {
+        break;
+      }
+
+      const defaults = getProspectingFormDefaults(entry.hotspot.id);
+      const searchForm: SearchFormState = {
+        strategicPointId: entry.hotspot.id,
+        lat: defaults.lat,
+        lng: defaults.lng,
+        radio: defaults.radio,
+        rubro: defaults.rubro,
+      };
+
+      const maxForZone = Math.min(limits.maxCandidatesPerZone, remainingForRun);
+      const zoneCandidates = buildCandidatesForSearch(searchForm, {
+        maxCandidates: maxForZone,
+        hotspot: entry.hotspot,
+        startIndex: indexOffset,
+        batchKeys,
+      });
+
+      aggregated.push(...zoneCandidates);
+      indexOffset += zoneCandidates.length;
+      remainingForRun -= zoneCandidates.length;
+    }
+
+    if (aggregated.length === 0) {
+      setFeedback("La corrida sugerida no devolvió candidatos dentro de los límites configurados.");
+      return;
+    }
+
+    setCandidates(aggregated);
+    setSelectedIds(aggregated.filter((item) => item.dedupeReason === null).map((item) => item.id));
+
+    const executedHotspotIds = Array.from(new Set(aggregated.flatMap((item) => (item.hotspotId ? [item.hotspotId] : []))));
+    if (executedHotspotIds.length > 0) {
+      setHotspotRuns(recordHotspotBatchRun(executedHotspotIds));
+    }
+
+    setFeedback(`Corrida sugerida generó ${aggregated.length} candidatos en ${executedHotspotIds.length} zonas.`);
   }
 
   function toggleSelection(candidateId: string, checked: boolean) {
@@ -278,6 +355,30 @@ export default function ProspectingPage() {
         </p>
       </header>
 
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-sm font-semibold">Estado por hotspot habilitado</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                <th className="px-2 py-2">Hotspot</th>
+                <th className="px-2 py-2">Prioridad comercial</th>
+                <th className="px-2 py-2">Última prospección</th>
+              </tr>
+            </thead>
+            <tbody>
+              {enabledHotspots.map((hotspot) => (
+                <tr key={hotspot.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
+                  <td className="px-2 py-2">{hotspot.label}</td>
+                  <td className="px-2 py-2">{hotspot.commercialPriority}</td>
+                  <td className="px-2 py-2">{formatLastRun(hotspotRuns[hotspot.id]?.lastRunAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <form onSubmit={handleSearch} className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mb-3">
           <label className="space-y-1 text-sm">
@@ -288,9 +389,9 @@ export default function ProspectingPage() {
               onChange={(event) => handleStrategicPointChange(event.target.value)}
             >
               <option value={MANUAL_STRATEGIC_POINT_ID}>Manual</option>
-              {STRATEGIC_POINTS_CATALOG.map((point) => (
+              {enabledHotspots.map((point) => (
                 <option key={point.id} value={point.id}>
-                  {point.label}
+                  {point.label} (prioridad {point.commercialPriority})
                 </option>
               ))}
             </select>
@@ -321,6 +422,13 @@ export default function ProspectingPage() {
           >
             Buscar candidatos
           </button>
+          <button
+            type="button"
+            onClick={handleSuggestedRun}
+            className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900"
+          >
+            Corrida sugerida
+          </button>
           <Link href="/leads" className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
             Volver a leads
           </Link>
@@ -340,6 +448,7 @@ export default function ProspectingPage() {
               <thead>
                 <tr className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                   <th className="px-2 py-2">Sel.</th>
+                  <th className="px-2 py-2">Hotspot</th>
                   <th className="px-2 py-2">Negocio</th>
                   <th className="px-2 py-2">Rubro</th>
                   <th className="px-2 py-2">Ubicación</th>
@@ -361,6 +470,7 @@ export default function ProspectingPage() {
                         onChange={(event) => toggleSelection(candidate.id, event.target.checked)}
                       />
                     </td>
+                    <td className="px-2 py-2 align-top">{candidate.hotspotLabel ?? "Manual"}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.businessName}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.category}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.location}</td>
