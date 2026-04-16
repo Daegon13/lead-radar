@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { loadOrInitializeLeads, saveLeads } from "@/lib/storage";
+import { loadOrInitializeLeads, resetStoredLeads, saveLeads } from "@/lib/storage";
 import { scoreLead } from "@/lib/scoring";
 import type { Lead, LeadFormValues } from "@/types/lead";
 
@@ -62,6 +62,15 @@ export function useLeads() {
     });
   }
 
+  function replaceLeads(nextLeads: Lead[]) {
+    setLeads(nextLeads.map(normalizeLead));
+  }
+
+  function resetLeads() {
+    const clearedLeads = resetStoredLeads();
+    setLeadsState(clearedLeads);
+  }
+
   function addLead(newLead: Lead) {
     setLeads((currentLeads) => [newLead, ...currentLeads]);
   }
@@ -113,6 +122,8 @@ export function useLeads() {
     scoredLeads,
     isLoaded,
     setLeads,
+    replaceLeads,
+    resetLeads,
     addLead,
     createLead,
     updateLead,
