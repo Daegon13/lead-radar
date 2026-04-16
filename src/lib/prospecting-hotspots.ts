@@ -5,6 +5,7 @@ export type ProspectingHotspot = {
   lng: number;
   radioDefault: number;
   rubroSugerido?: string;
+  commercialPriority: number;
   enabled: boolean;
 };
 
@@ -25,6 +26,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     lng: -58.3816,
     radioDefault: 900,
     rubroSugerido: "Servicios profesionales",
+    commercialPriority: 100,
     enabled: true,
   },
   {
@@ -34,6 +36,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     lng: -58.423,
     radioDefault: 1200,
     rubroSugerido: "Gastronomía",
+    commercialPriority: 95,
     enabled: true,
   },
   {
@@ -43,6 +46,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     lng: -58.4565,
     radioDefault: 1000,
     rubroSugerido: "Retail",
+    commercialPriority: 90,
     enabled: true,
   },
   {
@@ -52,6 +56,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     lng: -58.3974,
     radioDefault: 950,
     rubroSugerido: "Moda y accesorios",
+    commercialPriority: 85,
     enabled: true,
   },
   {
@@ -61,6 +66,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     lng: -58.393,
     radioDefault: 1200,
     rubroSugerido: "Comercio de cercanía",
+    commercialPriority: 70,
     enabled: false,
   },
 ];
@@ -86,10 +92,22 @@ function applyHotspotConfig(
   });
 }
 
+function sortByCommercialPriority(hotspots: ProspectingHotspot[]): ProspectingHotspot[] {
+  return [...hotspots].sort((a, b) => {
+    if (b.commercialPriority === a.commercialPriority) {
+      return a.label.localeCompare(b.label);
+    }
+
+    return b.commercialPriority - a.commercialPriority;
+  });
+}
+
 export function getEnabledProspectingHotspots(
   config?: ProspectingHotspotToggleConfig,
 ): ProspectingHotspot[] {
-  return applyHotspotConfig(PROSPECTING_HOTSPOTS, config).filter((hotspot) => hotspot.enabled);
+  return sortByCommercialPriority(
+    applyHotspotConfig(PROSPECTING_HOTSPOTS, config).filter((hotspot) => hotspot.enabled),
+  );
 }
 
 export function getProspectingHotspotById(
