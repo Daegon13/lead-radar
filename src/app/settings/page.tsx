@@ -19,6 +19,11 @@ export default function SettingsPage() {
   const [preview, setPreview] = useState<LeadImportResult | null>(null);
   const [previewFileName, setPreviewFileName] = useState<string>("");
 
+  function shouldParseAsCsv(file: File): boolean {
+    const lowerName = file.name.toLowerCase();
+    return lowerName.endsWith(".csv") || file.type === "text/csv";
+  }
+
   function handleExport() {
     const serialized = exportLeadsAsJson(leads);
     const blob = new Blob([serialized], { type: "application/json" });
@@ -51,10 +56,7 @@ export default function SettingsPage() {
       return;
     }
 
-    const parsed =
-      selectedFile.name.toLowerCase().endsWith(".csv")
-        ? importLeadsFromCsv(rawText)
-        : importLeadsFromJson(rawText);
+    const parsed = shouldParseAsCsv(selectedFile) ? importLeadsFromCsv(rawText) : importLeadsFromJson(rawText);
 
     if (!parsed.leads || parsed.error) {
       setFeedback({
@@ -115,7 +117,7 @@ export default function SettingsPage() {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Gestión local de datos: exportación, restauración desde JSON y reset del estado.
+          Gestión local de datos: exportación, restauración desde JSON/CSV y reset del estado.
         </p>
       </header>
 

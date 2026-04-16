@@ -41,7 +41,7 @@ En **Settings → Importar** podés cargar archivos `.json` o `.csv`. Antes de c
 
 - Cantidad total de registros.
 - Registros válidos.
-- Registros descartados y motivo.
+- Registros descartados y motivo (incluyendo duplicados).
 
 ### Reglas de importación
 

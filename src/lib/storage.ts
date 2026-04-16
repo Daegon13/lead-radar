@@ -246,15 +246,20 @@ export function mapExternalRecordToLead(
   return { lead: normalized };
 }
 
-function deduplicateLeads(leads: Lead[]): { leads: Lead[]; deduplicated: number } {
+function deduplicateLeads(
+  leadsWithRow: Array<{ lead: Lead; row: number }>,
+): { leads: Lead[]; duplicateRows: number[] } {
   const seenKeys = new Set<string>();
   const deduped: Lead[] = [];
+  const duplicateRows: number[] = [];
 
-  for (const lead of leads) {
+  for (const entry of leadsWithRow) {
+    const { lead, row } = entry;
     const locationOrAddress = (lead.address ?? lead.location).trim().toLowerCase();
     const key = `${lead.businessName.trim().toLowerCase()}|${locationOrAddress}`;
 
     if (seenKeys.has(key)) {
+      duplicateRows.push(row);
       continue;
     }
 
@@ -262,7 +267,7 @@ function deduplicateLeads(leads: Lead[]): { leads: Lead[]; deduplicated: number 
     deduped.push(lead);
   }
 
-  return { leads: deduped, deduplicated: leads.length - deduped.length };
+  return { leads: deduped, duplicateRows };
 }
 
 function splitCsvLine(line: string): string[] {
@@ -415,7 +420,7 @@ export function importExternalLeads(rawText: string, origin: ImportOrigin): Lead
     sourceRecords = parsedCsv;
   }
 
-  const normalizedLeads: Lead[] = [];
+  const normalizedLeads: Array<{ lead: Lead; row: number }> = [];
 
   sourceRecords.forEach((record, index) => {
     if (!isObjectRecord(record)) {
@@ -429,13 +434,13 @@ export function importExternalLeads(rawText: string, origin: ImportOrigin): Lead
       return;
     }
 
-    normalizedLeads.push(mapped.lead);
+    normalizedLeads.push({ lead: mapped.lead, row: index + 1 });
   });
 
   const deduplicated = deduplicateLeads(normalizedLeads);
-  if (deduplicated.deduplicated > 0) {
-    discarded.push({ row: 0, reason: `${deduplicated.deduplicated} duplicados por businessName + address/location` });
-  }
+  deduplicated.duplicateRows.forEach((row) => {
+    discarded.push({ row, reason: "duplicado por businessName + address/location" });
+  });
 
   return {
     leads: deduplicated.leads,
@@ -443,7 +448,7 @@ export function importExternalLeads(rawText: string, origin: ImportOrigin): Lead
       total: sourceRecords.length,
       valid: deduplicated.leads.length,
       discarded,
-      deduplicated: deduplicated.deduplicated,
+      deduplicated: deduplicated.duplicateRows.length,
     },
   };
 }
