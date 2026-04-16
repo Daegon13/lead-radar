@@ -10,7 +10,7 @@ import {
   type ExternalProspectResult,
   mapExternalResultToLeadFormValues,
 } from "@/lib/prospecting-adapter";
-import type { LeadFormValues } from "@/types/lead";
+import type { Lead, LeadFormValues } from "@/types/lead";
 
 type SearchFormState = {
   lat: string;
@@ -21,17 +21,20 @@ type SearchFormState = {
 
 type ProspectCandidate = {
   id: string;
-  external: ExternalProspectResult;
   values: LeadFormValues;
-  duplicateWithExisting: boolean;
+  dedupeReason: "existing" | "batch" | null;
 };
 
 function createProspectId(index: number): string {
   return `prospect-${index}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function createLeadId(): string {
+  return `lead-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function buildMockExternalResults(form: SearchFormState): ExternalProspectResult[] {
-  const areaLabel = `${form.rubro.trim() || "Negocio"} ${form.lat.trim()},${form.lng.trim()}`;
+  const areaLabel = `${form.rubro.trim() || "Negocio"} (${form.lat.trim()}, ${form.lng.trim()})`;
 
   return [
     {
@@ -62,6 +65,17 @@ function buildMockExternalResults(form: SearchFormState): ExternalProspectResult
       user_ratings_total: 0,
     },
   ];
+}
+
+function materializeLead(values: LeadFormValues): Lead {
+  const now = new Date().toISOString();
+
+  return {
+    ...values,
+    id: createLeadId(),
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 export default function ProspectingPage() {
@@ -96,32 +110,44 @@ export default function ProspectingPage() {
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!form.lat.trim() || !form.lng.trim() || !form.radio.trim() || !form.rubro.trim()) {
-      setFeedback("Completá lat, lng, radio y rubro para buscar prospectos.");
+    const lat = Number(form.lat);
+    const lng = Number(form.lng);
+    const radius = Number(form.radio);
+
+    if (!form.rubro.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
+      setFeedback("Completá lat/lng/radio numéricos y rubro para buscar prospectos.");
       return;
     }
 
     const externalResults = buildMockExternalResults(form);
+    const batchKeys = new Set<string>();
+
     const mappedCandidates = externalResults.map((external, index) => {
       const values = mapExternalResultToLeadFormValues(external);
-      const duplicateWithExisting = existingKeys.has(
-        buildLeadDedupKey({
-          businessName: values.businessName,
-          address: values.address,
-          location: values.location,
-        }),
-      );
+      const key = buildLeadDedupKey({
+        businessName: values.businessName,
+        address: values.address,
+        location: values.location,
+      });
+
+      let dedupeReason: ProspectCandidate["dedupeReason"] = null;
+      if (existingKeys.has(key)) {
+        dedupeReason = "existing";
+      } else if (batchKeys.has(key)) {
+        dedupeReason = "batch";
+      }
+
+      batchKeys.add(key);
 
       return {
         id: createProspectId(index),
-        external,
         values,
-        duplicateWithExisting,
+        dedupeReason,
       };
     });
 
     setCandidates(mappedCandidates);
-    setSelectedIds(mappedCandidates.filter((item) => !item.duplicateWithExisting).map((item) => item.id));
+    setSelectedIds(mappedCandidates.filter((item) => item.dedupeReason === null).map((item) => item.id));
     setFeedback(`Se encontraron ${mappedCandidates.length} candidatos simulados para revisar.`);
   }
 
@@ -137,8 +163,9 @@ export default function ProspectingPage() {
 
   function handleAddSelected() {
     const selectedCandidates = candidates.filter((candidate) => selectedIds.includes(candidate.id));
-    const dedupedSelected: ProspectCandidate[] = [];
     const seenKeys = new Set(existingKeys);
+    const selectedLeads: Lead[] = [];
+    let singleLeadValues: LeadFormValues | null = null;
 
     for (const candidate of selectedCandidates) {
       const key = buildLeadDedupKey({
@@ -152,28 +179,23 @@ export default function ProspectingPage() {
       }
 
       seenKeys.add(key);
-      dedupedSelected.push(candidate);
+      if (!singleLeadValues) {
+        singleLeadValues = candidate.values;
+      }
+      selectedLeads.push(materializeLead(candidate.values));
     }
 
-    if (dedupedSelected.length === 0) {
+    if (selectedLeads.length === 0) {
       setFeedback("No hay candidatos nuevos para agregar (todos estaban duplicados).");
       return;
     }
 
-    if (dedupedSelected.length === 1) {
-      createLead(dedupedSelected[0].values);
+    if (selectedLeads.length === 1 && singleLeadValues) {
+      createLead(singleLeadValues);
       setFeedback("Se agregó 1 lead nuevo.");
     } else {
-      const now = new Date().toISOString();
-      const newLeads = dedupedSelected.map((candidate) => ({
-        ...candidate.values,
-        id: `lead-${Math.random().toString(36).slice(2, 10)}`,
-        createdAt: now,
-        updatedAt: now,
-      }));
-
-      replaceLeads([...newLeads, ...leads]);
-      setFeedback(`Se agregaron ${newLeads.length} leads nuevos.`);
+      replaceLeads([...selectedLeads, ...leads]);
+      setFeedback(`Se agregaron ${selectedLeads.length} leads nuevos.`);
     }
 
     setCandidates([]);
@@ -237,6 +259,7 @@ export default function ProspectingPage() {
                   <th className="px-2 py-2">Negocio</th>
                   <th className="px-2 py-2">Rubro</th>
                   <th className="px-2 py-2">Ubicación</th>
+                  <th className="px-2 py-2">Dirección</th>
                   <th className="px-2 py-2">Rating</th>
                   <th className="px-2 py-2">Reseñas</th>
                   <th className="px-2 py-2">Contacto</th>
@@ -250,19 +273,22 @@ export default function ProspectingPage() {
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(candidate.id)}
-                        disabled={candidate.duplicateWithExisting}
+                        disabled={candidate.dedupeReason !== null}
                         onChange={(event) => toggleSelection(candidate.id, event.target.checked)}
                       />
                     </td>
                     <td className="px-2 py-2 align-top">{candidate.values.businessName}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.category}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.location}</td>
+                    <td className="px-2 py-2 align-top">{candidate.values.address ?? "-"}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.rating ?? "-"}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.reviewCount}</td>
                     <td className="px-2 py-2 align-top">{candidate.values.websiteUrl ?? candidate.values.phone ?? "-"}</td>
                     <td className="px-2 py-2 align-top text-xs">
-                      {candidate.duplicateWithExisting ? (
-                        <span className="rounded bg-amber-100 px-2 py-1 text-amber-700">Duplicado</span>
+                      {candidate.dedupeReason === "existing" ? (
+                        <span className="rounded bg-amber-100 px-2 py-1 text-amber-700">Duplicado existente</span>
+                      ) : candidate.dedupeReason === "batch" ? (
+                        <span className="rounded bg-orange-100 px-2 py-1 text-orange-700">Duplicado en lote</span>
                       ) : (
                         <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-700">Nuevo</span>
                       )}
