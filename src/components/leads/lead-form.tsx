@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { LEAD_STATUSES, NEXT_ACTIONS, NEXT_ACTION_LABELS } from "@/lib/constants";
+import { LEAD_STATUSES, LEAD_STATUS_LABELS, NEXT_ACTIONS, NEXT_ACTION_LABELS } from "@/lib/constants";
 import { scoreLead } from "@/lib/scoring";
 import type {
   CommercialPotential,
@@ -100,6 +100,25 @@ function buildInitialState(initialLead?: Lead): FormState {
   };
 }
 
+function parseRating(value: string): number | null {
+  if (value.trim() === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(5, parsed)) : null;
+}
+
+function parseReviewCount(value: string): number {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor(parsed));
+}
+
 export function LeadForm({ mode, initialLead, onSubmit, isSaving = false }: LeadFormProps) {
   const [values, setValues] = useState<FormState>(buildInitialState(initialLead));
   const [error, setError] = useState<string | null>(null);
@@ -112,8 +131,8 @@ export function LeadForm({ mode, initialLead, onSubmit, isSaving = false }: Lead
         category: values.category.trim() || "Sin rubro",
         location: values.location.trim() || "Sin zona",
         address: values.address.trim() || undefined,
-        rating: values.rating === "" ? null : Number(values.rating),
-        reviewCount: Number(values.reviewCount || 0),
+        rating: parseRating(values.rating),
+        reviewCount: parseReviewCount(values.reviewCount),
         hasWebsite: values.hasWebsite,
         websiteUrl: values.websiteUrl.trim() || undefined,
         instagram: values.instagram.trim() || undefined,
@@ -169,8 +188,8 @@ export function LeadForm({ mode, initialLead, onSubmit, isSaving = false }: Lead
       category: values.category.trim(),
       location: values.location.trim(),
       address: values.address.trim() || undefined,
-      rating: values.rating === "" ? null : Number(values.rating),
-      reviewCount: Math.max(0, Number(values.reviewCount || 0)),
+      rating: parseRating(values.rating),
+      reviewCount: parseReviewCount(values.reviewCount),
       hasWebsite: values.hasWebsite,
       websiteUrl: values.websiteUrl.trim() || undefined,
       instagram: values.instagram.trim() || undefined,
@@ -229,7 +248,7 @@ export function LeadForm({ mode, initialLead, onSubmit, isSaving = false }: Lead
         <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Gestión comercial y notas</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1 text-sm"><span>Estado del lead</span><select className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={values.status} onChange={(e)=>updateField("status",e.target.value as LeadStatus)}>{LEAD_STATUSES.map((status)=><option key={status} value={status}>{status}</option>)}</select></label>
+            <label className="space-y-1 text-sm"><span>Estado del lead</span><select className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={values.status} onChange={(e)=>updateField("status",e.target.value as LeadStatus)}>{LEAD_STATUSES.map((status)=><option key={status} value={status}>{LEAD_STATUS_LABELS[status]}</option>)}</select></label>
             <label className="space-y-1 text-sm"><span>Próxima acción</span><select className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={values.nextAction} onChange={(e)=>updateField("nextAction",e.target.value as NextAction)}>{NEXT_ACTIONS.map((action)=><option key={action} value={action}>{NEXT_ACTION_LABELS[action]}</option>)}</select></label>
             <label className="space-y-1 text-sm"><span>Fecha seguimiento</span><input type="date" className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={values.followUpDate} onChange={(e)=>updateField("followUpDate",e.target.value)} /></label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={values.demoRecommended} onChange={(e)=>updateField("demoRecommended",e.target.checked)} /> Demo recomendada</label>

@@ -16,6 +16,7 @@ export default function NewLeadPage() {
   function handleCreate(values: LeadFormValues) {
     setIsSaving(true);
     const created = createLead(values);
+    setIsSaving(false);
     router.push(`/leads/${created.id}/edit`);
   }
 
