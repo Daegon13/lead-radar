@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { deservesDemo, scoreLead } from "@/lib/scoring";
+import { scoreLead } from "@/lib/scoring";
 import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { Lead, LeadFormValues } from "@/types/lead";
 import { StatusQuickActions } from "@/components/leads/status-quick-actions";
@@ -79,7 +79,7 @@ function OptionalText({ value }: { value?: string }) {
 
 export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
   const score = scoreLead(lead);
-  const showDemoIndicator = deservesDemo(lead, score);
+  const showDemoIndicator = lead.demoRecommended;
 
   return (
     <section className="space-y-4">

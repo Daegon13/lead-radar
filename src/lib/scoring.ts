@@ -122,11 +122,3 @@ export function scoreLead(lead: Lead): LeadScoreResult {
     recommendedAction,
   };
 }
-
-export function deservesDemo(lead: Lead, score: LeadScoreResult = scoreLead(lead)): boolean {
-  if (lead.demoRecommended) {
-    return true;
-  }
-
-  return score.priority === "A" || (score.priority === "B" && lead.urgencySignal === "high");
-}
