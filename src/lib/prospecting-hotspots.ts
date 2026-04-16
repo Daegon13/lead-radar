@@ -6,6 +6,7 @@ export type ProspectingHotspot = {
   radioDefault: number;
   rubroSugerido?: string;
   enabled: boolean;
+  commercialPriority: number;
 };
 
 export type ProspectingHotspotToggleConfig = Partial<Record<ProspectingHotspot["id"], boolean>>;
@@ -26,6 +27,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     radioDefault: 900,
     rubroSugerido: "Servicios profesionales",
     enabled: true,
+    commercialPriority: 1,
   },
   {
     id: "palermo-soho-gastronomico",
@@ -35,6 +37,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     radioDefault: 1200,
     rubroSugerido: "Gastronomía",
     enabled: true,
+    commercialPriority: 2,
   },
   {
     id: "corredor-cabildo-belgrano",
@@ -44,6 +47,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     radioDefault: 1000,
     rubroSugerido: "Retail",
     enabled: true,
+    commercialPriority: 3,
   },
   {
     id: "avenida-santa-fe-recoleta",
@@ -53,6 +57,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     radioDefault: 950,
     rubroSugerido: "Moda y accesorios",
     enabled: true,
+    commercialPriority: 4,
   },
   {
     id: "zona-sur-lanus-centro",
@@ -62,6 +67,7 @@ export const PROSPECTING_HOTSPOTS: ProspectingHotspot[] = [
     radioDefault: 1200,
     rubroSugerido: "Comercio de cercanía",
     enabled: false,
+    commercialPriority: 5,
   },
 ];
 
