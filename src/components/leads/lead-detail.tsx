@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { scoreLead } from "@/lib/scoring";
+import { deservesDemo, scoreLead } from "@/lib/scoring";
 import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { Lead, LeadFormValues } from "@/types/lead";
 import { StatusQuickActions } from "@/components/leads/status-quick-actions";
@@ -79,6 +79,7 @@ function OptionalText({ value }: { value?: string }) {
 
 export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
   const score = scoreLead(lead);
+  const showDemoIndicator = deservesDemo(lead, score);
 
   return (
     <section className="space-y-4">
@@ -216,6 +217,11 @@ export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
               </p>
             </div>
             <p className="text-sm text-zinc-600 dark:text-zinc-300">{score.summary}</p>
+            {showDemoIndicator ? (
+              <p className="rounded-md border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-sm font-medium text-fuchsia-800 dark:border-fuchsia-900/40 dark:bg-fuchsia-950/20 dark:text-fuchsia-200">
+                🎯 Merece demo: alta prioridad comercial detectada.
+              </p>
+            ) : null}
 
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
