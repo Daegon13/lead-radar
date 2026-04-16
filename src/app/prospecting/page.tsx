@@ -13,10 +13,20 @@ import {
 import type { Lead, LeadFormValues } from "@/types/lead";
 
 type SearchFormState = {
+  strategicPointId: string;
   lat: string;
   lng: string;
   radio: string;
   rubro: string;
+};
+
+type StrategicPoint = {
+  id: string;
+  label: string;
+  lat: string;
+  lng: string;
+  radio: string;
+  rubro?: string;
 };
 
 type ProspectCandidate = {
@@ -24,6 +34,35 @@ type ProspectCandidate = {
   values: LeadFormValues;
   dedupeReason: "existing" | "batch" | null;
 };
+
+const MANUAL_STRATEGIC_POINT_ID = "manual";
+
+const STRATEGIC_POINTS_CATALOG: StrategicPoint[] = [
+  {
+    id: "microcentro-caba",
+    label: "Microcentro (CABA)",
+    lat: "-34.6036",
+    lng: "-58.3817",
+    radio: "1200",
+    rubro: "Gastronomía",
+  },
+  {
+    id: "palermo-caba",
+    label: "Palermo Soho (CABA)",
+    lat: "-34.5875",
+    lng: "-58.4241",
+    radio: "900",
+    rubro: "Indumentaria",
+  },
+  {
+    id: "nueva-cordoba",
+    label: "Nueva Córdoba (Córdoba)",
+    lat: "-31.4272",
+    lng: "-64.1844",
+    radio: "1000",
+    rubro: "Salud y bienestar",
+  },
+];
 
 function createProspectId(index: number): string {
   return `prospect-${index}-${Math.random().toString(36).slice(2, 8)}`;
@@ -80,7 +119,13 @@ function materializeLead(values: LeadFormValues): Lead {
 
 export default function ProspectingPage() {
   const { leads, createLead, replaceLeads } = useLeads();
-  const [form, setForm] = useState<SearchFormState>({ lat: "", lng: "", radio: "", rubro: "" });
+  const [form, setForm] = useState<SearchFormState>({
+    strategicPointId: MANUAL_STRATEGIC_POINT_ID,
+    lat: "",
+    lng: "",
+    radio: "",
+    rubro: "",
+  });
   const [candidates, setCandidates] = useState<ProspectCandidate[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -105,6 +150,28 @@ export default function ProspectingPage() {
 
   function updateField(field: keyof SearchFormState, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleStrategicPointChange(value: string) {
+    if (value === MANUAL_STRATEGIC_POINT_ID) {
+      updateField("strategicPointId", value);
+      return;
+    }
+
+    const strategicPoint = STRATEGIC_POINTS_CATALOG.find((item) => item.id === value);
+    if (!strategicPoint) {
+      updateField("strategicPointId", MANUAL_STRATEGIC_POINT_ID);
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      strategicPointId: strategicPoint.id,
+      lat: strategicPoint.lat,
+      lng: strategicPoint.lng,
+      radio: strategicPoint.radio,
+      rubro: strategicPoint.rubro ?? current.rubro,
+    }));
   }
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
@@ -212,6 +279,23 @@ export default function ProspectingPage() {
       </header>
 
       <form onSubmit={handleSearch} className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mb-3">
+          <label className="space-y-1 text-sm">
+            <span>Punto estratégico</span>
+            <select
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              value={form.strategicPointId}
+              onChange={(event) => handleStrategicPointChange(event.target.value)}
+            >
+              <option value={MANUAL_STRATEGIC_POINT_ID}>Manual</option>
+              {STRATEGIC_POINTS_CATALOG.map((point) => (
+                <option key={point.id} value={point.id}>
+                  {point.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1 text-sm">
             <span>Lat *</span>
