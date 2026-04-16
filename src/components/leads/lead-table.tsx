@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { ScoredLead } from "@/hooks/use-leads";
 import type { LeadStatus, Priority } from "@/types/lead";
@@ -54,6 +56,7 @@ export function LeadTable({ leads }: LeadTableProps) {
             <th className="px-4 py-3">Prioridad</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3">Próxima acción</th>
+            <th className="px-4 py-3 text-right">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -80,12 +83,20 @@ export function LeadTable({ leads }: LeadTableProps) {
                 </span>
               </td>
               <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{formatNextAction(lead.nextAction)}</td>
+              <td className="px-4 py-3 text-right">
+                <Link
+                  href={`/leads/${lead.id}/edit`}
+                  className="text-xs font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300"
+                >
+                  Editar
+                </Link>
+              </td>
             </tr>
           ))}
 
           {leads.length === 0 ? (
             <tr>
-              <td className="px-4 py-8 text-center text-sm text-zinc-500" colSpan={6}>
+              <td className="px-4 py-8 text-center text-sm text-zinc-500" colSpan={7}>
                 No hay leads que coincidan con los filtros.
               </td>
             </tr>
