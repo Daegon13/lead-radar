@@ -67,6 +67,11 @@ export function LeadTable({ leads }: LeadTableProps) {
                   {lead.businessName}
                 </Link>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">{lead.location}</p>
+                {lead.demoRecommended ? (
+                  <p className="mt-1 inline-flex rounded-full bg-fuchsia-100 px-2 py-0.5 text-[11px] font-semibold text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-200">
+                    Merece demo
+                  </p>
+                ) : null}
               </td>
               <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{lead.category}</td>
               <td className="px-4 py-3">
