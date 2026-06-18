@@ -1,0 +1,244 @@
+# Roadmap — Lead Radar
+
+## Fase 0 — Documentación y criterios
+
+### Objetivo
+
+Dejar clara la visión del producto, ICP, scoring, arquitectura y límites.
+
+### Entregables
+
+- `AGENTS.md`.
+- Documentación en `docs/`.
+- README actualizado con enlaces.
+
+### Criterios de aceptación
+
+- Documentación en español.
+- Criterios comerciales accionables.
+- Roadmap implementable.
+- No cambios funcionales innecesarios.
+
+### Riesgos
+
+- Documentar demasiado genérico.
+- No reflejar el repo real.
+
+## Fase 1 — Refactor de prospecting mock a provider interface
+
+### Objetivo
+
+Separar UI de generación de datos.
+
+### Entregables
+
+- `src/lib/prospecting/types.ts`.
+- `mockProspectingProvider`.
+- `/prospecting` usando interfaz provider.
+
+### Criterios de aceptación
+
+- UI sigue funcionando igual.
+- Mock encapsulado.
+- `page.tsx` no contiene lógica mock pesada.
+- Lint/build pasan.
+
+### Riesgos
+
+- Romper experiencia actual.
+- Sobrediseñar tipos.
+
+## Fase 2 — CLI local con CSV/JSON
+
+### Objetivo
+
+Generar leads desde archivos locales sin backend.
+
+### Entregables
+
+- `scripts/prospect.ts`.
+- Comando `npm run prospect:run`.
+- Provider CSV/JSON.
+- Export JSON/CSV.
+
+### Criterios de aceptación
+
+- Ejecuta con archivo local.
+- Exporta leads importables.
+- No requiere API paga.
+
+### Riesgos
+
+- Formatos CSV inconsistentes.
+- Falta de campos útiles.
+
+## Fase 3 — Normalización, dedupe y scoring
+
+### Objetivo
+
+Evitar basura y priorizar calidad.
+
+### Entregables
+
+- `normalize.ts`.
+- `dedupe.ts`.
+- `fit-score.ts`.
+- Score con razones.
+
+### Criterios de aceptación
+
+- Duplicados obvios se fusionan.
+- Leads A/B tienen explicación.
+- Sin contacto no puede ser A.
+
+### Riesgos
+
+- Dedupe demasiado agresivo.
+- Score opaco.
+
+## Fase 4 — Detector de brecha digital
+
+### Objetivo
+
+Detectar oportunidad digital real.
+
+### Entregables
+
+- `digital-gap.ts`.
+- Niveles 0-5.
+- `gapSignals`.
+- Chequeo inicial de website si aplica.
+
+### Criterios de aceptación
+
+- No se limita a `hasWebsite`.
+- Diferencia sin web, solo redes y web débil.
+- Genera señales usables en venta.
+
+### Riesgos
+
+- Falsos positivos por fuentes incompletas.
+- Chequeos web lentos.
+
+## Fase 5 — Integración UI `/prospecting`
+
+### Objetivo
+
+Usar resultados reales del motor en la app.
+
+### Entregables
+
+- Filtros por ciudad/rubro/fuente.
+- Vista de resultados.
+- Guardar en leads.
+- Exportar.
+
+### Criterios de aceptación
+
+- El usuario puede generar/revisar/importar leads sin salir del flujo.
+- Resultados muestran razones de score.
+
+### Riesgos
+
+- UI compleja.
+- Confundir corrida con base permanente.
+
+## Fase 6 — Call Queue
+
+### Objetivo
+
+Convertir leads en llamadas accionables.
+
+### Entregables
+
+- Vista de cola de llamadas.
+- Apertura sugerida.
+- Objeción probable.
+- Botones de estado.
+- Seguimiento.
+
+### Criterios de aceptación
+
+- Diego puede abrir la herramienta y saber a quién llamar.
+- Cada llamada tiene argumento.
+
+### Riesgos
+
+- Ser otra tabla más sin acción clara.
+
+## Fase 7 — Feedback loop
+
+### Objetivo
+
+Aprender de resultados reales.
+
+### Entregables
+
+- Registro de outcome.
+- Métricas por rubro/zona/prioridad.
+- Ajustes de scoring.
+
+### Criterios de aceptación
+
+- Se puede medir tasa de interés/cierre.
+- El score puede mejorar con evidencia.
+
+### Riesgos
+
+- Pocos datos iniciales.
+- Sesgo manual.
+
+## Fase 8 — Automatización programada
+
+### Objetivo
+
+Generar listas recurrentes.
+
+### Entregables
+
+- Corridas programadas locales.
+- Configuración por rubro/día.
+- Reportes automáticos.
+
+### Criterios de aceptación
+
+- La herramienta produce cola nueva sin búsqueda manual.
+- No contacta automáticamente.
+
+### Riesgos
+
+- Generar demasiados leads.
+- Datos repetidos.
+
+## Fase 9 — Fuentes avanzadas/API opcional
+
+### Objetivo
+
+Mejorar enriquecimiento con APIs oficiales o datasets más complejos.
+
+### Entregables
+
+- Provider Overture/Foursquare directo.
+- Google Places opcional.
+- Verificador web avanzado.
+
+### Criterios de aceptación
+
+- API keys seguras.
+- Costos controlados.
+- Mejoras medibles en calidad.
+
+### Riesgos
+
+- Dependencia de pagos.
+- Términos de uso restrictivos.
+- Complejidad innecesaria.
+
+## Secuencia recomendada inmediata
+
+1. Aplicar documentación.
+2. PR pequeño: provider interface para mock.
+3. PR pequeño: CLI CSV/JSON.
+4. PR: scoring explicable.
+5. PR: digital gap.
+6. PR: UI de resultados reales.
