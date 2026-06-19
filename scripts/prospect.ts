@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
+import { dedupeProspects } from "../src/lib/prospecting/dedupe";
+import { normalizeProspects, type NormalizedProspectRecord } from "../src/lib/prospecting/normalize";
 import type { Lead, LeadFormValues } from "../src/types/lead";
 
 type Format = "csv" | "json";
@@ -85,18 +87,6 @@ function getValue(record: RawRecord, aliases: readonly string[]): unknown {
   return undefined;
 }
 
-function getString(record: RawRecord, aliases: readonly string[]): string | undefined {
-  const value = getValue(record, aliases);
-  return value === undefined ? undefined : String(value).trim();
-}
-
-function getNumber(record: RawRecord, aliases: readonly string[]): number | null {
-  const value = getValue(record, aliases);
-  if (value === undefined) return null;
-  const parsed = Number(String(value).replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function splitCsvLine(line: string): string[] {
   const values: string[] = [];
   let current = "";
@@ -172,23 +162,21 @@ function inferCommercialPotential(category: string): Lead["commercialPotential"]
   return "medium";
 }
 
-function buildLead(record: RawRecord, row: number): Lead | null {
-  const now = new Date().toISOString();
-  const businessName = getString(record, FIELD_ALIASES.name);
-  if (!businessName) return null;
-
-  const category = getString(record, FIELD_ALIASES.category) ?? "Sin categoría";
-  const location = getString(record, FIELD_ALIASES.city) ?? "Sin ubicación";
-  const websiteUrl = getString(record, FIELD_ALIASES.website);
-  const instagram = getString(record, FIELD_ALIASES.instagram);
-  const phone = getString(record, FIELD_ALIASES.phone);
-  const whatsapp = getString(record, FIELD_ALIASES.whatsapp);
-  const source = getString(record, FIELD_ALIASES.source) ?? "Archivo local";
-  const sourceId = getString(record, FIELD_ALIASES.id) ?? `local-${row}`;
-  const gapSignals = websiteUrl ? ["Tiene sitio web: requiere revisión manual de calidad"] : ["No se detectó sitio web en el archivo fuente"];
+function buildLead(prospect: NormalizedProspectRecord, row: number): Lead {
+  const now = prospect.sourceCheckedAt;
+  const businessName = prospect.name;
+  const category = prospect.category;
+  const location = prospect.neighborhood ?? prospect.city ?? prospect.address ?? "Sin ubicación";
+  const websiteUrl = prospect.website;
+  const instagram = prospect.socials.instagram;
+  const phone = prospect.phone;
+  const whatsapp = prospect.socials.whatsapp;
+  const source = prospect.source;
+  const sourceId = prospect.sourceId ?? `local-${row}`;
+  const gapSignals = websiteUrl ? ["Tiene sitio web normalizado: requiere revisión manual de calidad"] : ["No se detectó sitio web en el archivo fuente normalizado"];
   const scoreReasons = [
-    `Rubro filtrado/importado: ${category}`,
-    phone || whatsapp || instagram ? "Tiene al menos un contacto público" : "Contacto público no detectado; prioridad limitada",
+    `Rubro normalizado/importado: ${category}`,
+    phone || whatsapp || instagram || prospect.email ? "Tiene al menos un contacto público normalizado" : "Contacto público no detectado; prioridad limitada",
     websiteUrl ? "Brecha digital pendiente de validar manualmente" : "Brecha digital inicial: sin sitio web informado",
   ];
 
@@ -196,9 +184,9 @@ function buildLead(record: RawRecord, row: number): Lead | null {
     businessName,
     category,
     location,
-    address: getString(record, FIELD_ALIASES.address),
-    rating: getNumber(record, FIELD_ALIASES.rating),
-    reviewCount: getNumber(record, FIELD_ALIASES.reviewCount) ?? 0,
+    address: prospect.address,
+    rating: prospect.rating,
+    reviewCount: prospect.reviewCount,
     hasWebsite: Boolean(websiteUrl),
     websiteUrl,
     instagram,
@@ -217,7 +205,7 @@ function buildLead(record: RawRecord, row: number): Lead | null {
     demoRecommended: !websiteUrl,
     source,
     sourceId,
-    sourceUrl: getString(record, FIELD_ALIASES.sourceUrl),
+    sourceUrl: prospect.sourceUrl,
     sourceCheckedAt: now,
     confidence: phone || whatsapp || instagram ? 0.7 : 0.45,
     gapSignals,
@@ -259,8 +247,10 @@ async function main() {
       passesFilter(record, FIELD_ALIASES.city, options.city) &&
       passesFilter(record, FIELD_ALIASES.category, options.category),
   );
-  const limited = filtered.slice(0, options.limit ?? filtered.length);
-  const leads = limited.map((record, index) => buildLead(record, index + 1)).filter((lead): lead is Lead => lead !== null);
+  const normalized = normalizeProspects(filtered, { defaultSource: "Archivo local" });
+  const { prospects: cleanProspects, duplicateCount } = dedupeProspects(normalized);
+  const limited = cleanProspects.slice(0, options.limit ?? cleanProspects.length);
+  const leads = limited.map((prospect, index) => buildLead(prospect, index + 1));
 
   await mkdir(options.out, { recursive: true });
   const jsonPath = path.join(options.out, "lead-radar-prospects.json");
@@ -268,7 +258,7 @@ async function main() {
   await writeFile(jsonPath, `${JSON.stringify(leads, null, 2)}\n`, "utf8");
   await writeFile(csvPath, `${leadsToReviewCsv(leads)}\n`, "utf8");
 
-  console.log(`Leídos: ${records.length}. Filtrados: ${filtered.length}. Exportados: ${leads.length}.`);
+  console.log(`Leídos: ${records.length}. Filtrados: ${filtered.length}. Normalizados: ${normalized.length}. Duplicados: ${duplicateCount}. Exportados: ${leads.length}.`);
   console.log(`JSON importable: ${jsonPath}`);
   console.log(`CSV revisión: ${csvPath}`);
 }
