@@ -239,3 +239,30 @@ Advertencias
 - Cada lead A/B tiene `scoreReasons` y `gapSignals`.
 - No requiere API paga.
 - No modifica UI en la primera fase.
+
+## Fase 3 — CLI local CSV/JSON
+
+La Fase 3 agrega un primer motor local ejecutable sin APIs reales ni scraping. El comando disponible es:
+
+```bash
+npm run prospect:run -- --input samples/prospects-sample.csv --format csv --country UY --city Montevideo --category cafe --limit 10 --out exports/demo
+```
+
+Decisiones de implementación:
+
+- El runner vive en `scripts/prospect.ts` para mantenerlo separado de la UI.
+- El proyecto no declara `tsx`; como alternativa mínima se usa el binario `jiti` ya presente en `node_modules/.bin` por la toolchain instalada.
+- La entrada inicial soporta CSV simple y JSON con array raíz, `{ "records": [] }` o `{ "items": [] }`.
+- El filtro inicial compara país, ciudad y rubro con matching case-insensitive y tolerante a tildes.
+- La salida siempre genera dos archivos dentro del directorio indicado por `--out`:
+  - `lead-radar-prospects.json`: array de `Lead` compatible con la importación actual de Lead Radar.
+  - `lead-radar-prospects.csv`: CSV de revisión manual con datos y razones principales.
+- Los leads generados incluyen `source`, `sourceId`, `sourceCheckedAt`, `confidence`, `gapSignals`, `scoreReasons`, `salesAngle`, `callOpening`, `objectionHint` y `nextAction` para conservar trazabilidad y explicación comercial.
+- El motor no conecta APIs reales, no scrapea sitios y marca `doNotCallChecked: false` para obligar a validación manual antes de campañas telefónicas.
+
+Alcance pendiente para fases posteriores:
+
+- Deduplicación entre archivos y leads existentes.
+- Reporte `.report.md` de corrida.
+- Scoring más fino como función pura reutilizable.
+- Providers específicos para Overture/Foursquare/OSM.
