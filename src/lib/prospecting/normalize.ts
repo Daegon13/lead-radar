@@ -31,6 +31,7 @@ export type NormalizedProspectRecord = {
   source: string;
   sourceUrl?: string;
   sourceCheckedAt: string;
+  confidence?: number;
   raw: RawProspect | Record<string, unknown>;
 };
 
@@ -173,7 +174,8 @@ export function normalizeProspect(raw: RawProspect | Record<string, unknown>, op
     reviewCount: Math.max(0, Math.floor(reviewCount ?? 0)),
     source: normalizeText(record.source ?? record.fuente) ?? options.defaultSource ?? "Archivo local",
     sourceUrl: normalizeWebsite(record.sourceUrl ?? record.urlFuente).display,
-    sourceCheckedAt: options.checkedAt ?? new Date().toISOString(),
+    sourceCheckedAt: normalizeText(record.sourceCheckedAt) ?? options.checkedAt ?? new Date().toISOString(),
+    confidence: normalizeCoordinate(record.confidence),
     raw,
   };
 }

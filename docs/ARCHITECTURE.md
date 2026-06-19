@@ -272,3 +272,7 @@ Debe mostrar:
 - No diseñar dedupe desde el inicio.
 - No guardar trazabilidad de fuente.
 - Automatizar contacto antes de validar calidad.
+
+## Fase 14 — Sources
+
+La carpeta `src/lib/prospecting/sources/` contiene la interfaz formal de adquisición multifuente y el registro de providers. Los providers adaptan datos externos a `RawProspect[]`; la UI y el scoring no consumen payloads crudos de Overture, Foursquare u OSM directamente.

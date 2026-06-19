@@ -14,7 +14,14 @@
       "input": "samples/prospects-sample.csv",
       "format": "csv",
       "provider": "generic",
-      "limit": 50
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "input": "samples/prospects-sample.csv",
+          "format": "csv"
+        }
+      ]
     },
     {
       "id": "tuesday-dentistry-montevideo",
@@ -27,7 +34,14 @@
       "input": "samples/prospects-sample.csv",
       "format": "csv",
       "provider": "generic",
-      "limit": 50
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "input": "samples/prospects-sample.csv",
+          "format": "csv"
+        }
+      ]
     },
     {
       "id": "wednesday-real-estate",
@@ -40,7 +54,14 @@
       "input": "samples/prospects-sample.csv",
       "format": "csv",
       "provider": "generic",
-      "limit": 50
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "input": "samples/prospects-sample.csv",
+          "format": "csv"
+        }
+      ]
     },
     {
       "id": "thursday-veterinary",
@@ -53,7 +74,14 @@
       "input": "samples/prospects-sample.csv",
       "format": "csv",
       "provider": "generic",
-      "limit": 50
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "input": "samples/prospects-sample.csv",
+          "format": "csv"
+        }
+      ]
     },
     {
       "id": "friday-premium-barbers",
@@ -66,7 +94,25 @@
       "input": "samples/prospects-sample.csv",
       "format": "csv",
       "provider": "generic",
-      "limit": 50
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "input": "samples/prospects-sample.csv",
+          "format": "csv"
+        }
+      ]
     }
-  ]
+  ],
+  "sources": {
+    "available": [
+      "csv-local",
+      "json-local",
+      "overture-file",
+      "foursquare-file",
+      "osm-file",
+      "osm-overpass"
+    ],
+    "notes": "Google Places and AI enrichment are documented future providers; API keys must stay server-side and are not required for Phase 14."
+  }
 }

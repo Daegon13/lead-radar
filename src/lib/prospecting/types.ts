@@ -46,7 +46,11 @@ export type RawProspect = {
   lat?: number;
   lng?: number;
   source?: string;
+  sourceId?: string;
   sourceUrl?: string;
+  sourceCheckedAt?: string;
+  confidence?: number;
+  operatingStatus?: string;
   sourcePayload?: unknown;
 };
 

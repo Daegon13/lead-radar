@@ -8,8 +8,11 @@ function mapOvertureRecord(record: RawFileRecord, checkedAt: string): RawProspec
   const lat = parseNumber(readFirst(record, ["latitude", "lat", "geometry.latitude", "geometry.lat"]));
   const lng = parseNumber(readFirst(record, ["longitude", "lng", "lon", "geometry.longitude", "geometry.lng", "geometry.lon"]));
   const id = readFirst(record, ["id", "place_id", "source_id", "names.primary"]);
-  const website = readFirst(record, ["websites", "website", "contact.website"]);
+  const website = readFirst(record, ["websites", "website", "contact.website", "contact.websites"]);
   const websites = parseStringArray(website);
+  const socials = parseStringArray(readFirst(record, ["socials", "contact.socials", "contact.social_media"]));
+  const phones = parseStringArray(readFirst(record, ["phones", "phone", "contact.phone", "contact.phones"]));
+  const emails = parseStringArray(readFirst(record, ["emails", "email", "contact.email", "contact.emails"]));
 
   return withPayload(
     {
@@ -21,12 +24,17 @@ function mapOvertureRecord(record: RawFileRecord, checkedAt: string): RawProspec
       neighborhood: readFirst(record, ["addresses.0.region", "neighborhood", "locality"]) as string | undefined,
       address: readFirst(record, ["addresses.0.freeform", "address", "addr:full", "street_address"]) as string | undefined,
       website: websites[0] ?? (typeof website === "string" ? website : undefined),
-      phone: readFirst(record, ["phones", "phone", "contact.phone"]) as string | undefined,
-      email: readFirst(record, ["emails", "email", "contact.email"]) as string | undefined,
+      socials,
+      phone: phones[0] ?? (readFirst(record, ["phones", "phone", "contact.phone"]) as string | undefined),
+      email: emails[0] ?? (readFirst(record, ["emails", "email", "contact.email"]) as string | undefined),
       lat,
       lng,
       source: OVERTURE_FILE_PROVIDER_LABEL,
+      sourceId: id === undefined ? undefined : String(id),
       sourceUrl: "https://overturemaps.org/download/",
+      sourceCheckedAt: checkedAt,
+      confidence: parseNumber(readFirst(record, ["confidence", "confidence_score", "quality.confidence"])),
+      operatingStatus: readFirst(record, ["operating_status", "operatingStatus", "status"]) as string | undefined,
       sourcePayload: { checkedAt },
     },
     record,

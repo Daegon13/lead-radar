@@ -394,3 +394,9 @@ La pantalla `/prospecting` puede ejecutar jobs de prospección registrados sin e
 Cada job registrado define metadatos operativos (`id`, `label`, `description`, `country`, `city`, `categories`, `sources`, `limit`, `minPriority`, `outputName`) y se transforma en opciones del runner local. La ejecución reutiliza el mismo pipeline del CLI: lectura de fuente local permitida, normalización, deduplicación, scoring, generación de razones, señales de brecha, ángulo comercial, apertura de llamada y próxima acción.
 
 La implementación está pensada para funcionamiento local con Node (`runtime = "nodejs"`) porque escribe archivos en `exports/`. En entornos serverless/Vercel la escritura persistente de archivos puede no estar disponible; en ese caso el flujo recomendado sigue siendo local-first o exportar los resultados a almacenamiento explícito antes de usarlos en UI.
+
+## Fase 14 — Capa de adquisición
+
+Los jobs pueden declarar `sources` para ejecutar múltiples providers en una misma corrida. Cada entrada indica el provider (`id`), archivo local o parámetros de consulta, formato, filtros y límite. Si un job antiguo solo define `provider`, `input` y `format`, se mantiene compatibilidad convirtiéndolo internamente a una source única.
+
+El motor combina los `RawProspect[]` de todas las fuentes y recién después aplica normalización, deduplicación, detección de brecha digital, scoring, argumentos comerciales y exportación. Esta separación evita mezclar extracción con UI, cola de llamadas o scoring.
