@@ -386,3 +386,11 @@ npm run prospect:schedule -- --day tuesday
 npm run prospect:schedule -- --all
 npm run prospect:schedule -- --config prospecting.config.json
 ```
+
+## Fase 13 — Prospecting Job Runner UI
+
+La pantalla `/prospecting` puede ejecutar jobs de prospección registrados sin exponer una consola ni aceptar comandos arbitrarios desde el navegador. La UI carga la allowlist desde el registro interno derivado de `prospecting.config.json` y la API local `POST /api/prospecting/jobs/run` acepta únicamente `jobId`.
+
+Cada job registrado define metadatos operativos (`id`, `label`, `description`, `country`, `city`, `categories`, `sources`, `limit`, `minPriority`, `outputName`) y se transforma en opciones del runner local. La ejecución reutiliza el mismo pipeline del CLI: lectura de fuente local permitida, normalización, deduplicación, scoring, generación de razones, señales de brecha, ángulo comercial, apertura de llamada y próxima acción.
+
+La implementación está pensada para funcionamiento local con Node (`runtime = "nodejs"`) porque escribe archivos en `exports/`. En entornos serverless/Vercel la escritura persistente de archivos puede no estar disponible; en ese caso el flujo recomendado sigue siendo local-first o exportar los resultados a almacenamiento explícito antes de usarlos en UI.

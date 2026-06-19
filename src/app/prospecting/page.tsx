@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 
 import { useLeads } from "@/hooks/use-leads";
 import { ENABLE_EXTERNAL_PROSPECTING_FLOW } from "@/lib/constants";
@@ -24,6 +24,39 @@ import { scoreLead } from "@/lib/scoring";
 import { mockProspectingProvider } from "@/lib/prospecting/providers/mock-provider";
 import type { ProspectingRunInput } from "@/lib/prospecting/types";
 import type { Lead, LeadFormValues } from "@/types/lead";
+
+
+type ProspectingJobDefinition = {
+  id: string;
+  label: string;
+  description: string;
+  country?: string;
+  city?: string;
+  categories: string[];
+  sources: string[];
+  limit: number;
+  minPriority: string;
+  outputName: string;
+};
+
+type JobRunSummary = {
+  recordsRead: number;
+  filtered: number;
+  normalized: number;
+  duplicateCount: number;
+  exported: number;
+  discarded: number;
+  priorityCounts: Record<"A" | "B" | "C" | "D", number>;
+  jsonPath: string;
+  csvPath: string;
+  leads: Lead[];
+};
+
+type JobRunState = {
+  status: "idle" | "running" | "success" | "error";
+  summary?: JobRunSummary;
+  error?: string;
+};
 
 type SearchFormState = {
   strategicPointId: string;
@@ -136,6 +169,27 @@ export default function ProspectingPage() {
   const [candidates, setCandidates] = useState<ProspectCandidate[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<ProspectingJobDefinition[]>([]);
+  const [jobListError, setJobListError] = useState<string | null>(null);
+  const [jobRuns, setJobRuns] = useState<Record<string, JobRunState>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/prospecting/jobs")
+      .then(async (response) => {
+        const payload = (await response.json()) as { jobs?: ProspectingJobDefinition[]; error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "No se pudo cargar el registro de jobs.");
+        if (!cancelled) setJobs(payload.jobs ?? []);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setJobListError(error instanceof Error ? error.message : "No se pudo cargar el registro de jobs.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const existingKeys = useMemo(
     () => new Set(leads.map((lead) => buildLeadDedupKey(lead))),
@@ -359,6 +413,75 @@ export default function ProspectingPage() {
     });
   }
 
+  async function handleRunRegisteredJob(jobId: string) {
+    setJobRuns((current) => ({
+      ...current,
+      [jobId]: { status: "running" },
+    }));
+
+    try {
+      const response = await fetch("/api/prospecting/jobs/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId }),
+      });
+      const payload = (await response.json()) as { summary?: JobRunSummary; error?: string };
+      if (!response.ok || !payload.summary) {
+        throw new Error(payload.error ?? "No se pudo ejecutar el job.");
+      }
+
+      setJobRuns((current) => ({
+        ...current,
+        [jobId]: { status: "success", summary: payload.summary },
+      }));
+      setFeedback(`Job ejecutado: ${payload.summary.exported} leads exportados. Podés importar los resultados a la tabla de revisión.`);
+    } catch (error) {
+      setJobRuns((current) => ({
+        ...current,
+        [jobId]: {
+          status: "error",
+          error: error instanceof Error ? error.message : "No se pudo ejecutar el job.",
+        },
+      }));
+    }
+  }
+
+  function importJobRunResults(jobId: string) {
+    const summary = jobRuns[jobId]?.summary;
+    if (!summary) return;
+
+    const batchKeys = new Set<string>();
+    const importedCandidates = summary.leads.map((lead, index) => {
+      const values = leadLikeToFormValues(lead);
+      const key = buildLeadDedupKey({
+        businessName: values.businessName,
+        address: values.address,
+        location: values.location,
+      });
+
+      let dedupeReason: ProspectCandidate["dedupeReason"] = null;
+      if (existingKeys.has(key)) {
+        dedupeReason = "existing";
+      } else if (batchKeys.has(key)) {
+        dedupeReason = "batch";
+      }
+
+      batchKeys.add(key);
+
+      return {
+        id: createProspectId(index),
+        hotspotLabel: "Job registrado",
+        values,
+        dedupeReason,
+        origin: "json" as const,
+      };
+    });
+
+    setCandidates(importedCandidates);
+    setSelectedIds(importedCandidates.filter((item) => item.dedupeReason === null).map((item) => item.id));
+    setFeedback(`Se cargaron ${importedCandidates.length} resultados del job en la tabla de revisión.`);
+  }
+
   async function handleImportJson(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -504,6 +627,55 @@ export default function ProspectingPage() {
           candidatos y guardalos en el pipeline local.
         </p>
       </header>
+
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">Jobs registrados</h2>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Ejecutá solamente jobs allowlisted por configuración interna. La API recibe jobId, no comandos arbitrarios.
+          </p>
+          {jobListError ? <p className="mt-2 text-sm text-red-600">{jobListError}</p> : null}
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {jobs.map((job) => {
+            const run = jobRuns[job.id] ?? { status: "idle" as const };
+            const isRunning = run.status === "running";
+            return (
+              <article key={job.id} className="rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold">{job.label}</h3>
+                    <p className="text-zinc-600 dark:text-zinc-400">{job.description}</p>
+                    <p className="text-xs text-zinc-500">
+                      {job.city ?? "Sin ciudad"}, {job.country ?? "sin país"} · Categorías: {job.categories.join(", ")} · Fuentes: {job.sources.join(", ")} · Límite: {job.limit} · Mín. prioridad: {job.minPriority}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isRunning}
+                    onClick={() => handleRunRegisteredJob(job.id)}
+                    className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-100 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  >
+                    {isRunning ? "Ejecutando…" : "Ejecutar job"}
+                  </button>
+                </div>
+                {run.status === "success" && run.summary ? (
+                  <div className="mt-3 rounded-md bg-emerald-50 p-3 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+                    <p>Leídos: {run.summary.recordsRead}. Filtrados: {run.summary.filtered}. Normalizados: {run.summary.normalized}. Duplicados: {run.summary.duplicateCount}. Exportados: {run.summary.exported}.</p>
+                    <p>A/B/C/D: {run.summary.priorityCounts.A}/{run.summary.priorityCounts.B}/{run.summary.priorityCounts.C}/{run.summary.priorityCounts.D}</p>
+                    <p className="break-all">Archivo generado: {run.summary.jsonPath}</p>
+                    <button type="button" onClick={() => importJobRunResults(job.id)} className="mt-2 rounded-md border border-emerald-300 px-3 py-1 text-xs font-medium">
+                      Importar resultados a revisión
+                    </button>
+                  </div>
+                ) : null}
+                {run.status === "error" ? <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{run.error}</p> : null}
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-3 text-sm font-semibold">
