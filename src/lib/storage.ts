@@ -1,4 +1,6 @@
 import { seedLeads } from "@/data/seed-leads";
+import { calculateProspectFitScore } from "@/lib/prospecting/fit-score";
+import { normalizeProspect } from "@/lib/prospecting/normalize";
 import type { Lead } from "@/types/lead";
 
 const LEADS_STORAGE_KEY = "lead-radar:leads";
@@ -306,6 +308,36 @@ export function mapExternalRecordToLead(
     createdAt,
     updatedAt,
   };
+
+  const prospect = normalizeProspect({
+    id,
+    name: businessName,
+    category: candidate.category,
+    city: location,
+    address,
+    rating: candidate.rating,
+    reviewCount: candidate.reviewCount,
+    website: candidate.websiteUrl,
+    instagram: candidate.instagram,
+    whatsapp: candidate.whatsapp,
+    phone: candidate.phone,
+    email: getRecordValue(record, ["email", "mail"]),
+    source: candidate.source,
+    sourceId: candidate.sourceId,
+    sourceUrl: candidate.sourceUrl,
+  }, { checkedAt: asOptionalString(candidate.sourceCheckedAt) ?? now });
+
+  if (prospect && (!candidate.salesAngle || !candidate.callOpening || !candidate.objectionHint)) {
+    const fitScore = calculateProspectFitScore(prospect);
+    candidate.confidence ??= fitScore.gap.confidence;
+    candidate.priority ??= fitScore.priority;
+    candidate.gapSignals ??= fitScore.gapSignals;
+    candidate.scoreReasons ??= fitScore.scoreReasons;
+    candidate.salesAngle ??= fitScore.salesAngle;
+    candidate.callOpening ??= fitScore.callOpening;
+    candidate.objectionHint ??= fitScore.objectionHint;
+    candidate.nextAction ??= fitScore.nextAction;
+  }
 
   const normalized = normalizeLead(candidate);
 

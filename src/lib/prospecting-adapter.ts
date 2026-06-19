@@ -1,3 +1,5 @@
+import { calculateProspectFitScore } from "@/lib/prospecting/fit-score";
+import { normalizeProspect } from "@/lib/prospecting/normalize";
 import type { Lead, LeadFormValues } from "@/types/lead";
 
 export type ExternalProspectResult = {
@@ -46,7 +48,7 @@ export function mapExternalResultToLeadFormValues(result: ExternalProspectResult
   const address = asOptionalString(result.address);
   const location = asOptionalString(result.vicinity) ?? address ?? "Sin ubicación";
 
-  return {
+  const baseValues: LeadFormValues = {
     businessName: asOptionalString(result.nombre) ?? "Prospecto sin nombre",
     category: asOptionalString(result.tipo) ?? "Sin categoría",
     location,
@@ -68,6 +70,46 @@ export function mapExternalResultToLeadFormValues(result: ExternalProspectResult
     followUpDate: undefined,
     notes: "Importado desde prospección externa. Revisar variables comerciales antes de priorizar.",
     demoRecommended: false,
+  };
+
+  const normalizedProspect = normalizeProspect({
+    id: result.id,
+    name: baseValues.businessName,
+    category: baseValues.category,
+    vicinity: baseValues.location,
+    address: baseValues.address,
+    rating: baseValues.rating,
+    reviewCount: baseValues.reviewCount,
+    website: baseValues.websiteUrl,
+    phone: baseValues.phone,
+    source: "Mock prospecting provider",
+  });
+
+  if (!normalizedProspect) return baseValues;
+
+  const fitScore = calculateProspectFitScore(normalizedProspect);
+
+  return {
+    ...baseValues,
+    digitalPresenceQuality: baseValues.websiteUrl ? "acceptable" : "none",
+    commercialPotential: fitScore.priority === "A" || fitScore.priority === "B" ? "high" : "medium",
+    decisionMakerAccess: baseValues.phone ? "reachable" : "none",
+    urgencySignal: fitScore.gap.level >= 4 ? "high" : fitScore.gap.level >= 2 ? "medium" : "low",
+    problemObservation: fitScore.gap.summary,
+    nextAction: fitScore.nextAction,
+    notes: `Importado desde prospección externa. ${fitScore.salesAngle}`,
+    demoRecommended: fitScore.gap.level >= 3,
+    source: normalizedProspect.source,
+    sourceId: normalizedProspect.sourceId,
+    sourceUrl: normalizedProspect.sourceUrl,
+    sourceCheckedAt: normalizedProspect.sourceCheckedAt,
+    confidence: fitScore.gap.confidence,
+    priority: fitScore.priority,
+    gapSignals: fitScore.gapSignals,
+    scoreReasons: fitScore.scoreReasons,
+    salesAngle: fitScore.salesAngle,
+    callOpening: fitScore.callOpening,
+    objectionHint: fitScore.objectionHint,
   };
 }
 

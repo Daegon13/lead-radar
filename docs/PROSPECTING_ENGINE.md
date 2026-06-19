@@ -300,3 +300,14 @@ Cuando dos registros se fusionan, se conserva el primer registro como base y se 
 ### Integración CLI
 
 `scripts/prospect.ts` ahora ejecuta el flujo `leer → filtrar → normalizar → deduplicar → limitar → exportar`. El resumen del CLI informa cuántos registros fueron leídos, filtrados, normalizados, deduplicados y exportados.
+
+## Fase 6: Sales angle generator
+
+La Fase 6 mueve la generación de argumento comercial a `src/lib/prospecting/sales-angle.ts`. El módulo expone funciones puras para clasificar rubro y generar `salesAngle`, `callOpening`, `objectionHint` y `nextAction` desde un `NormalizedProspectRecord`, el resultado de brecha digital y la prioridad calculada.
+
+La integración queda en dos puntos:
+
+- `calculateProspectFitScore` usa el generador para que todo prospecto puntuado tenga pitch determinístico.
+- El CLI `npm run prospect:run` y los imports CSV/JSON que no traen pitch propio completan los campos comerciales usando el mismo scoring/generador.
+
+Esto mantiene compatibilidad: si un archivo importado ya trae `salesAngle`, `callOpening` u `objectionHint`, esos textos se preservan.

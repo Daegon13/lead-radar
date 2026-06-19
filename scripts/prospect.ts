@@ -230,7 +230,7 @@ function toCsvValue(value: unknown): string {
 }
 
 function leadsToReviewCsv(leads: Lead[]): string {
-  const headers = ["businessName", "category", "location", "address", "phone", "whatsapp", "instagram", "websiteUrl", "priority", "nextAction", "confidence", "gapSignals", "scoreReasons"];
+  const headers = ["businessName", "category", "location", "address", "phone", "whatsapp", "instagram", "websiteUrl", "priority", "nextAction", "confidence", "gapSignals", "scoreReasons", "salesAngle", "callOpening", "objectionHint"];
   return [headers.join(","), ...leads.map((lead) => headers.map((header) => toCsvValue(lead[header as keyof Lead])).join(","))].join("\n");
 }
 

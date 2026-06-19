@@ -1,5 +1,6 @@
 import type { NextAction, Priority } from "@/types/lead";
 import { detectDigitalGap, type DigitalGapResult } from "./digital-gap";
+import { generateSalesAngle } from "./sales-angle";
 import type { NormalizedProspectRecord } from "./normalize";
 
 export type ProspectFitScore = {
@@ -119,7 +120,7 @@ export function calculateProspectFitScore(prospect: NormalizedProspectRecord): P
   if (category.lowMargin) scoreReasons.push("Regla dura: rubro de bajo margen limitado a prioridad C");
   if (gap.level === 0) scoreReasons.push("Regla dura: presencia digital fuerte limitada a prioridad B");
 
-  const nextAction: NextAction = priority === "A" ? "call_today" : priority === "B" ? (prospect.phone || prospect.socials.whatsapp ? "call_today" : "dm_or_whatsapp") : priority === "C" ? "follow_up" : "disqualify";
+  const salesAngle = generateSalesAngle(prospect, gap, priority);
 
   return {
     total,
@@ -128,10 +129,10 @@ export function calculateProspectFitScore(prospect: NormalizedProspectRecord): P
     gap,
     scoreReasons,
     gapSignals: gap.signals,
-    salesAngle: gap.level >= 3 ? "Web profesional para convertir búsquedas locales y redes en consultas por WhatsApp." : "Diagnóstico breve para mejorar confianza, claridad de servicios y conversión digital.",
-    callOpening: `Hola, vi a ${prospect.name} en ${prospect.source} y quería validar si hoy la presencia digital les está generando consultas de calidad.`,
-    objectionHint: prospect.website ? "Si ya tienen web, ofrecer una auditoría puntual de conversión antes de proponer rediseño." : "Si usan Instagram, posicionar la web como base propia que complementa redes y WhatsApp.",
-    nextAction,
+    salesAngle: salesAngle.salesAngle,
+    callOpening: salesAngle.callOpening,
+    objectionHint: salesAngle.objectionHint,
+    nextAction: salesAngle.nextAction,
     manualReview,
   };
 }
