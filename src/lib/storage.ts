@@ -35,6 +35,46 @@ function asNumber(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function asOptionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function asOptionalStringArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const normalizedValues = value
+      .map((item) => asOptionalString(item))
+      .filter((item): item is string => Boolean(item));
+
+    return normalizedValues.length > 0 ? normalizedValues : undefined;
+  }
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmedValue);
+    if (Array.isArray(parsed)) {
+      return asOptionalStringArray(parsed);
+    }
+  } catch {
+    // Fall back to pipe-separated CSV-friendly values.
+  }
+
+  const values = trimmedValue
+    .split("|")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  return values.length > 0 ? values : undefined;
+}
+
 function asNullableNumber(value: unknown, fallback: number | null): number | null {
   if (value === null) {
     return null;
@@ -45,6 +85,10 @@ function asNullableNumber(value: unknown, fallback: number | null): number | nul
 
 function asBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function asAllowedString<T extends string>(value: unknown, allowed: Set<T>, fallback: T): T {
@@ -84,6 +128,19 @@ function normalizeLead(candidate: unknown): Lead | null {
     decisionMakerAccess: asAllowedString(candidate.decisionMakerAccess, VALID_DECISION_ACCESS, "none"),
     urgencySignal: asAllowedString(candidate.urgencySignal, VALID_URGENCY, "none"),
     problemObservation: asOptionalString(candidate.problemObservation),
+    source: asOptionalString(candidate.source),
+    sourceId: asOptionalString(candidate.sourceId),
+    sourceUrl: asOptionalString(candidate.sourceUrl),
+    sourceCheckedAt: asOptionalString(candidate.sourceCheckedAt),
+    confidence: asOptionalNumber(candidate.confidence),
+    gapSignals: asOptionalStringArray(candidate.gapSignals),
+    scoreReasons: asOptionalStringArray(candidate.scoreReasons),
+    salesAngle: asOptionalString(candidate.salesAngle),
+    callOpening: asOptionalString(candidate.callOpening),
+    objectionHint: asOptionalString(candidate.objectionHint),
+    lastContactedAt: asOptionalString(candidate.lastContactedAt),
+    doNotCallChecked: asOptionalBoolean(candidate.doNotCallChecked),
+    optOut: asOptionalBoolean(candidate.optOut),
     status: asAllowedString(candidate.status, VALID_STATUSES, "new"),
     nextAction: asAllowedString(candidate.nextAction, VALID_ACTIONS, "follow_up"),
     followUpDate: asOptionalString(candidate.followUpDate),
@@ -228,6 +285,19 @@ export function mapExternalRecordToLead(
     decisionMakerAccess: asOptionalString(getRecordValue(record, ["decisionMakerAccess"])),
     urgencySignal: asOptionalString(getRecordValue(record, ["urgencySignal"])),
     problemObservation: asOptionalString(getRecordValue(record, ["problemObservation"])),
+    source: asOptionalString(getRecordValue(record, ["source", "fuente"])),
+    sourceId: asOptionalString(getRecordValue(record, ["sourceId", "externalId", "providerId"])),
+    sourceUrl: asOptionalString(getRecordValue(record, ["sourceUrl", "urlFuente"])),
+    sourceCheckedAt: asOptionalString(getRecordValue(record, ["sourceCheckedAt", "checkedAt"])),
+    confidence: parseNullableNumberLike(getRecordValue(record, ["confidence", "confianza"])),
+    gapSignals: asOptionalStringArray(getRecordValue(record, ["gapSignals", "digitalGapSignals"])),
+    scoreReasons: asOptionalStringArray(getRecordValue(record, ["scoreReasons", "priorityReasons"])),
+    salesAngle: asOptionalString(getRecordValue(record, ["salesAngle", "anguloComercial"])),
+    callOpening: asOptionalString(getRecordValue(record, ["callOpening", "aperturaLlamada"])),
+    objectionHint: asOptionalString(getRecordValue(record, ["objectionHint", "objecion"])),
+    lastContactedAt: asOptionalString(getRecordValue(record, ["lastContactedAt"])),
+    doNotCallChecked: parseBooleanLike(getRecordValue(record, ["doNotCallChecked"])),
+    optOut: parseBooleanLike(getRecordValue(record, ["optOut"])),
     status: asOptionalString(getRecordValue(record, ["status"])),
     nextAction: asOptionalString(getRecordValue(record, ["nextAction"])),
     followUpDate: asOptionalString(getRecordValue(record, ["followUpDate"])),

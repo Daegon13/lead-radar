@@ -16,6 +16,22 @@ export type DecisionMakerAccess = "none" | "gatekeeper" | "reachable" | "direct"
 
 export type UrgencySignal = "none" | "low" | "medium" | "high";
 
+export type LeadProspectingMetadata = {
+  source?: string;
+  sourceId?: string;
+  sourceUrl?: string;
+  sourceCheckedAt?: string;
+  confidence?: number;
+  gapSignals?: string[];
+  scoreReasons?: string[];
+  salesAngle?: string;
+  callOpening?: string;
+  objectionHint?: string;
+  lastContactedAt?: string;
+  doNotCallChecked?: boolean;
+  optOut?: boolean;
+};
+
 export type ScoreBreakdown = {
   visibleDemand: number;
   digitalGap: number;
@@ -24,7 +40,7 @@ export type ScoreBreakdown = {
   urgencySignals: number;
 };
 
-export type Lead = {
+export type Lead = LeadProspectingMetadata & {
   id: string;
   businessName: string;
   category: string;

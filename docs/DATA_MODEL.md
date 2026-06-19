@@ -35,7 +35,7 @@ type Lead = {
 };
 ```
 
-Este modelo ya sirve como base, pero necesita campos opcionales para prospección automática.
+Este modelo ya sirve como base y en Fase 2 se extiende de forma backward-compatible con campos opcionales para prospección automática.
 
 ## Principio de compatibilidad
 
@@ -43,7 +43,7 @@ No romper leads existentes.
 
 Los nuevos campos deben ser opcionales al principio. La importación debe seguir aceptando archivos viejos.
 
-## Campos nuevos sugeridos
+## Campos nuevos de Fase 2
 
 ```ts
 type LeadProspectingMetadata = {
@@ -54,7 +54,6 @@ type LeadProspectingMetadata = {
   confidence?: number;
   gapSignals?: string[];
   scoreReasons?: string[];
-  digitalGapLevel?: 0 | 1 | 2 | 3 | 4 | 5;
   salesAngle?: string;
   callOpening?: string;
   objectionHint?: string;
@@ -81,7 +80,6 @@ type Lead = ExistingLead & LeadProspectingMetadata;
 | `confidence` | number 0-1 | Confianza del dato |
 | `gapSignals` | string[] | Señales de brecha digital |
 | `scoreReasons` | string[] | Razones del score |
-| `digitalGapLevel` | 0-5 | Nivel de brecha digital |
 | `salesAngle` | string | Ángulo comercial |
 | `callOpening` | string | Apertura de llamada sugerida |
 | `objectionHint` | string | Objeción probable y respuesta |
@@ -118,7 +116,6 @@ Para un lead automático útil:
 - `location` o coordenadas
 - `source`
 - `sourceCheckedAt`
-- `digitalGapLevel`
 - `gapSignals`
 - `scoreReasons`
 - `priority`
@@ -142,7 +139,7 @@ Reglas:
 ## CSV recomendado futuro
 
 ```csv
-businessName,category,location,address,phone,whatsapp,email,instagram,websiteUrl,source,sourceId,sourceCheckedAt,confidence,digitalGapLevel,gapSignals,scoreReasons,salesAngle,callOpening,objectionHint,nextAction,notes
+businessName,category,location,address,phone,whatsapp,email,instagram,websiteUrl,source,sourceId,sourceCheckedAt,confidence,gapSignals,scoreReasons,salesAngle,callOpening,objectionHint,nextAction,notes
 ```
 
 Para arrays como `gapSignals` y `scoreReasons`, usar separador ` | ` o JSON string.
