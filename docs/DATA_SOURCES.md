@@ -268,3 +268,24 @@ Campos aceptados inicialmente por alias:
 - Trazabilidad: `id`, `sourceId`, `externalId`, `providerId`, `source`, `sourceUrl`.
 
 Los datos incompletos siguen siendo válidos, pero reducen la confianza y dejan la próxima acción como seguimiento o revisión manual cuando no hay contacto público.
+
+## Fase 10 — providers de archivos locales de datos abiertos
+
+La primera integración con fuentes abiertas reales se hace sin llamadas online desde la app. Lead Radar espera archivos locales previamente descargados y, si hace falta, convertidos por una persona fuera del producto. El CLI puede leerlos con `--provider overture`, `--provider foursquare` u `--provider osm`, y cada provider mapea el archivo a `RawProspect` para reutilizar el pipeline común de normalización, deduplicación, scoring y exportación.
+
+Providers iniciales:
+
+- `overture-file`: lee exportaciones locales de Overture Places en JSON/CSV y toma, cuando existen, identificador, nombre principal, categoría primaria, dirección, ciudad, país, coordenadas, teléfono, email y website.
+- `foursquare-file`: lee exportaciones locales de Foursquare OS Places en JSON/CSV y toma, cuando existen, `fsq_place_id`, nombre, categoría, ubicación, coordenadas, teléfono y website.
+- `osm-file`: lee archivos locales JSON/CSV derivados de OpenStreetMap/Overpass y soporta tags habituales como `name`, `amenity`, `shop`, `tourism`, `addr:*`, `phone`, `contact:phone`, `website` y `contact:website`.
+
+Limitaciones esperadas de estas fuentes libres:
+
+- No siempre hay teléfono público.
+- No siempre hay rating ni cantidad de reseñas.
+- No siempre hay website.
+- No siempre hay redes sociales.
+- Las categorías pueden venir como taxonomías técnicas, tags libres o texto poco homogéneo.
+- La presencia de cadenas/franquicias puede requerir revisión manual antes de asignar prioridad alta.
+
+Estas integraciones no reemplazan el juicio comercial: aumentan trazabilidad y volumen inicial, pero la prioridad sigue dependiendo de contactabilidad, brecha digital y explicación del score.

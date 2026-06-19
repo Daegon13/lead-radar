@@ -123,3 +123,18 @@ La idea sería complementar lo que ya hacen en redes.
 - La UI debe permitir marcar opt-out/no contactar.
 - Los leads sin contacto claro no deben aparecer como prioridad alta.
 - Las corridas automáticas deben generar lista, no contactar.
+
+## Fase 10 — uso responsable de fuentes abiertas locales
+
+Los providers de Fase 10 sólo leen archivos locales previamente descargados o convertidos. Lead Radar no descarga datasets, no consulta endpoints en masa, no scrapea sitios y no evade límites técnicos o términos de uso desde la app.
+
+Buenas prácticas para esta fase:
+
+- Verificar licencia, atribución y términos de Overture Places, Foursquare OS Places u OpenStreetMap antes de usar o redistribuir datos.
+- Guardar fuente y fecha de chequeo en cada lead generado.
+- Tratar teléfonos, emails, websites y redes como datos públicos que requieren contacto humano prudente, no automatización masiva.
+- No asumir que la ausencia de website, teléfono, rating o redes implica negligencia del negocio; sólo es una señal a validar.
+- Revisar manualmente cadenas, franquicias y negocios con baja contactabilidad antes de priorizarlos.
+- Mantener opt-out y evitar contactos repetidos a negocios que pidan no ser contactados.
+
+Esta fase mantiene explícitamente la independencia de Google Places: Google puede evaluarse más adelante como fuente paga/enriquecimiento, pero el MVP no depende exclusivamente de esa API.

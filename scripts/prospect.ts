@@ -3,16 +3,21 @@ import path from "node:path";
 import process from "node:process";
 
 import { dedupeProspects } from "../src/lib/prospecting/dedupe";
+import { loadFoursquareFileProspects } from "../src/lib/prospecting/providers/foursquare-file-provider";
+import { loadOsmFileProspects } from "../src/lib/prospecting/providers/osm-file-provider";
+import { loadOvertureFileProspects } from "../src/lib/prospecting/providers/overture-file-provider";
 import { calculateProspectFitScore } from "../src/lib/prospecting/fit-score";
 import { normalizeProspects, type NormalizedProspectRecord } from "../src/lib/prospecting/normalize";
 import type { Lead, LeadFormValues } from "../src/types/lead";
 
 type Format = "csv" | "json";
+type Provider = "generic" | "overture" | "foursquare" | "osm";
 type RawRecord = Record<string, unknown>;
 
 type CliOptions = {
   input: string;
   format: Format;
+  provider: Provider;
   country?: string;
   city?: string;
   category?: string;
@@ -38,7 +43,7 @@ const FIELD_ALIASES = {
 } as const;
 
 function usage(): never {
-  console.error(`Uso: npm run prospect:run -- --input <archivo> --format csv|json --out <ruta> [--country UY] [--city Montevideo] [--category restaurant] [--limit 50]`);
+  console.error(`Uso: npm run prospect:run -- --input <archivo> --format csv|json --out <ruta> [--provider generic|overture|foursquare|osm] [--country UY] [--city Montevideo] [--category restaurant] [--limit 50]`);
   process.exit(1);
 }
 
@@ -57,6 +62,8 @@ function parseArgs(argv: string[]): CliOptions {
 
   if (!values.input || !values.format || !values.out) usage();
   if (values.format !== "csv" && values.format !== "json") usage();
+  const provider = values.provider ?? "generic";
+  if (provider !== "generic" && provider !== "overture" && provider !== "foursquare" && provider !== "osm") usage();
 
   const limit = values.limit === undefined ? undefined : Number(values.limit);
   if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) usage();
@@ -64,6 +71,7 @@ function parseArgs(argv: string[]): CliOptions {
   return {
     input: values.input,
     format: values.format,
+    provider,
     country: values.country,
     city: values.city,
     category: values.category,
@@ -234,17 +242,32 @@ function leadsToReviewCsv(leads: Lead[]): string {
   return [headers.join(","), ...leads.map((lead) => headers.map((header) => toCsvValue(lead[header as keyof Lead])).join(","))].join("\n");
 }
 
+function providerLabel(provider: Provider): string {
+  if (provider === "overture") return "Overture Places local file";
+  if (provider === "foursquare") return "Foursquare OS Places local file";
+  if (provider === "osm") return "OpenStreetMap local file";
+  return "Archivo local";
+}
+
+async function loadProviderRecords(options: CliOptions): Promise<RawRecord[]> {
+  if (options.provider === "overture") return (await loadOvertureFileProspects(options)) as RawRecord[];
+  if (options.provider === "foursquare") return (await loadFoursquareFileProspects(options)) as RawRecord[];
+  if (options.provider === "osm") return (await loadOsmFileProspects(options)) as RawRecord[];
+
+  const raw = await readFile(options.input, "utf8");
+  return options.format === "csv" ? parseCsv(raw) : parseJson(raw);
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const raw = await readFile(options.input, "utf8");
-  const records = options.format === "csv" ? parseCsv(raw) : parseJson(raw);
+  const records = await loadProviderRecords(options);
   const filtered = records.filter(
     (record) =>
       passesFilter(record, FIELD_ALIASES.country, options.country) &&
       passesFilter(record, FIELD_ALIASES.city, options.city) &&
       passesFilter(record, FIELD_ALIASES.category, options.category),
   );
-  const normalized = normalizeProspects(filtered, { defaultSource: "Archivo local" });
+  const normalized = normalizeProspects(filtered, { defaultSource: providerLabel(options.provider) });
   const { prospects: cleanProspects, duplicateCount } = dedupeProspects(normalized);
   const limited = cleanProspects.slice(0, options.limit ?? cleanProspects.length);
   const leads = limited.map((prospect, index) => buildLead(prospect, index + 1));

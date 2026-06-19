@@ -325,3 +325,28 @@ Decisión de arquitectura:
 - La deduplicación reutiliza la clave actual basada en nombre y dirección/ubicación para evitar guardar leads ya existentes o repetidos dentro del lote importado.
 
 Esta fase no introduce scraping, APIs pagas ni lectura automática de directorios; solo conecta el motor local/importado con revisión humana en la pantalla de prospección.
+
+## Fase 10 — providers reales desde archivos abiertos locales
+
+La Fase 10 agrega providers para archivos locales de fuentes abiertas, manteniendo el enfoque local-first y evitando que la app descargue datos automáticamente. El flujo queda:
+
+1. Una persona descarga o convierte datos desde una fuente permitida fuera de Lead Radar.
+2. El CLI recibe `--input`, `--format csv|json` y `--provider generic|overture|foursquare|osm`.
+3. El provider seleccionado mapea los campos propios de la fuente a `RawProspect`.
+4. El pipeline existente normaliza, filtra, deduplica, puntúa, explica la prioridad y exporta JSON/CSV.
+
+Comandos de ejemplo:
+
+```bash
+npm run prospect:run -- --provider overture --input data/overture-places.csv --format csv --out exports --country UY --city Montevideo --limit 50
+npm run prospect:run -- --provider foursquare --input data/foursquare-os-places.json --format json --out exports --category restaurant
+npm run prospect:run -- --provider osm --input data/osm-overpass.json --format json --out exports --city Montevideo
+```
+
+Los providers agregados son:
+
+- `src/lib/prospecting/providers/overture-file-provider.ts`
+- `src/lib/prospecting/providers/foursquare-file-provider.ts`
+- `src/lib/prospecting/providers/osm-file-provider.ts`
+
+Ninguno hace scraping, crawling ni consultas remotas. Todos trabajan sobre archivos locales ya disponibles. Como Overture, Foursquare OS Places y OSM pueden traer campos incompletos, el motor debe aceptar rating, reseñas, teléfono, website y redes como opcionales, reduciendo confianza cuando falten señales críticas en lugar de descartar automáticamente todos los registros.
