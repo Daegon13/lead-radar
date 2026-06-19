@@ -11,6 +11,7 @@ import {
   type CallQueueAction,
   type CallQueueItem,
 } from "@/lib/call-queue";
+import { AiResearcherControls } from "@/components/leads/ai-researcher-controls";
 import { useLeads } from "@/hooks/use-leads";
 import { formatNextAction } from "@/lib/utils";
 import type { Lead, Priority } from "@/types/lead";
@@ -114,7 +115,7 @@ function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
 }
 
 export default function CallQueuePage() {
-  const { scoredLeads, isLoaded, updateLead } = useLeads();
+  const { scoredLeads, leads, isLoaded, updateLead, setLeads } = useLeads();
   const [notesByLeadId, setNotesByLeadId] = useState<Record<string, string>>({});
 
   const items = useMemo(
@@ -129,6 +130,11 @@ export default function CallQueuePage() {
     setNotesByLeadId((current) => ({ ...current, [lead.id]: "" }));
   }
 
+  function applyBatchEnrichment(enrichedLeads: Lead[]) {
+    const enrichedById = new Map(enrichedLeads.map((lead) => [lead.id, lead]));
+    setLeads((currentLeads) => currentLeads.map((lead) => enrichedById.get(lead.id) ?? lead));
+  }
+
   return (
     <section className="space-y-5">
       <header className="space-y-1">
@@ -137,6 +143,10 @@ export default function CallQueuePage() {
           Cola diaria local-first: primero aparecen leads A/B con contacto público, score alto y acción pendiente. No automatiza llamadas ni mensajes.
         </p>
       </header>
+
+      {isLoaded ? (
+        <AiResearcherControls mode="batch" leads={leads} onLeadsEnriched={applyBatchEnrichment} />
+      ) : null}
 
       {!isLoaded ? (
         <div className="rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">Cargando cola...</div>

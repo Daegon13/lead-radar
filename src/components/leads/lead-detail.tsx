@@ -5,6 +5,7 @@ import Link from "next/link";
 import { scoreLead } from "@/lib/scoring";
 import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { Lead, LeadFormValues } from "@/types/lead";
+import { AiResearcherControls } from "@/components/leads/ai-researcher-controls";
 import { CommercialFeedbackPanel } from "@/components/leads/commercial-feedback-panel";
 import { StatusQuickActions } from "@/components/leads/status-quick-actions";
 
@@ -46,6 +47,7 @@ const BREAKDOWN_LABELS = {
 type LeadDetailProps = {
   lead: Lead;
   onQuickUpdate: (values: Partial<LeadFormValues>) => void;
+  onLeadEnriched: (lead: Lead) => void;
 };
 
 function formatDate(value?: string): string {
@@ -78,7 +80,7 @@ function OptionalText({ value }: { value?: string }) {
   return <>{value}</>;
 }
 
-export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
+export function LeadDetail({ lead, onQuickUpdate, onLeadEnriched }: LeadDetailProps) {
   const score = scoreLead(lead);
   const showDemoIndicator = lead.demoRecommended;
 
@@ -110,6 +112,8 @@ export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         <div className="space-y-4">
+          <AiResearcherControls mode="single" lead={lead} onLeadEnriched={onLeadEnriched} />
+
           <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Identificación del negocio
@@ -191,6 +195,25 @@ export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
               <div><dt className="text-zinc-500">Próxima acción</dt><dd>{formatNextAction(lead.nextAction)}</dd></div>
               <div><dt className="text-zinc-500">Seguimiento</dt><dd>{formatDate(lead.followUpDate)}</dd></div>
               <div><dt className="text-zinc-500">Demo recomendada</dt><dd>{lead.demoRecommended ? "Sí" : "No"}</dd></div>
+            </dl>
+          </section>
+
+
+
+          <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Investigación IA opcional
+            </h2>
+            <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+              <div className="sm:col-span-2"><dt className="text-zinc-500">Resumen</dt><dd><OptionalText value={lead.researchSummary} /></dd></div>
+              <div><dt className="text-zinc-500">Sitio verificado</dt><dd><OptionalText value={lead.verifiedWebsite} /></dd></div>
+              <div><dt className="text-zinc-500">Investigado</dt><dd>{lead.aiResearchedAt ? formatTimestamp(lead.aiResearchedAt) : "Sin investigación IA"}</dd></div>
+              <div className="sm:col-span-2"><dt className="text-zinc-500">Señales</dt><dd>{lead.businessSignals?.join(" · ") ?? "No definido"}</dd></div>
+              <div className="sm:col-span-2"><dt className="text-zinc-500">Riesgos</dt><dd>{lead.riskFlags?.join(" · ") ?? "No definido"}</dd></div>
+              <div className="sm:col-span-2"><dt className="text-zinc-500">Ángulo mejorado</dt><dd><OptionalText value={lead.improvedSalesAngle} /></dd></div>
+              <div className="sm:col-span-2"><dt className="text-zinc-500">Apertura mejorada</dt><dd><OptionalText value={lead.improvedCallOpening} /></dd></div>
+              <div className="sm:col-span-2"><dt className="text-zinc-500">Evidencia</dt><dd>{lead.evidenceUrls?.length ? lead.evidenceUrls.map((url) => <a key={url} href={url} target="_blank" rel="noreferrer" className="mr-2 underline">{url}</a>) : "Sin evidencia"}</dd></div>
+              <div><dt className="text-zinc-500">Proveedor</dt><dd>{lead.aiProvider && lead.aiModel ? `${lead.aiProvider} · ${lead.aiModel}` : "No definido"}</dd></div>
             </dl>
           </section>
 
