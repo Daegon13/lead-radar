@@ -8,13 +8,13 @@ import { loadOsmFileProspects } from "../src/lib/prospecting/providers/osm-file-
 import { loadOvertureFileProspects } from "../src/lib/prospecting/providers/overture-file-provider";
 import { calculateProspectFitScore } from "../src/lib/prospecting/fit-score";
 import { normalizeProspects, type NormalizedProspectRecord } from "../src/lib/prospecting/normalize";
-import type { Lead, LeadFormValues } from "../src/types/lead";
+import type { Lead, LeadFormValues, Priority } from "../src/types/lead";
 
-type Format = "csv" | "json";
-type Provider = "generic" | "overture" | "foursquare" | "osm";
+export type Format = "csv" | "json";
+export type Provider = "generic" | "overture" | "foursquare" | "osm";
 type RawRecord = Record<string, unknown>;
 
-type CliOptions = {
+export type ProspectRunOptions = {
   input: string;
   format: Format;
   provider: Provider;
@@ -47,7 +47,7 @@ function usage(): never {
   process.exit(1);
 }
 
-function parseArgs(argv: string[]): CliOptions {
+function parseArgs(argv: string[]): ProspectRunOptions {
   const values: Record<string, string> = {};
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -237,7 +237,7 @@ function toCsvValue(value: unknown): string {
   return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
 }
 
-function leadsToReviewCsv(leads: Lead[]): string {
+export function leadsToReviewCsv(leads: Lead[]): string {
   const headers = ["businessName", "category", "location", "address", "phone", "whatsapp", "instagram", "websiteUrl", "priority", "nextAction", "confidence", "gapSignals", "scoreReasons", "salesAngle", "callOpening", "objectionHint"];
   return [headers.join(","), ...leads.map((lead) => headers.map((header) => toCsvValue(lead[header as keyof Lead])).join(","))].join("\n");
 }
@@ -249,7 +249,7 @@ function providerLabel(provider: Provider): string {
   return "Archivo local";
 }
 
-async function loadProviderRecords(options: CliOptions): Promise<RawRecord[]> {
+async function loadProviderRecords(options: ProspectRunOptions): Promise<RawRecord[]> {
   if (options.provider === "overture") return (await loadOvertureFileProspects(options)) as RawRecord[];
   if (options.provider === "foursquare") return (await loadFoursquareFileProspects(options)) as RawRecord[];
   if (options.provider === "osm") return (await loadOsmFileProspects(options)) as RawRecord[];
@@ -258,8 +258,20 @@ async function loadProviderRecords(options: CliOptions): Promise<RawRecord[]> {
   return options.format === "csv" ? parseCsv(raw) : parseJson(raw);
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
+export type ProspectRunSummary = {
+  recordsRead: number;
+  filtered: number;
+  normalized: number;
+  duplicateCount: number;
+  exported: number;
+  discarded: number;
+  priorityCounts: Record<Priority, number>;
+  jsonPath: string;
+  csvPath: string;
+  leads: Lead[];
+};
+
+export async function runProspecting(options: ProspectRunOptions): Promise<ProspectRunSummary> {
   const records = await loadProviderRecords(options);
   const filtered = records.filter(
     (record) =>
@@ -278,12 +290,33 @@ async function main() {
   await writeFile(jsonPath, `${JSON.stringify(leads, null, 2)}\n`, "utf8");
   await writeFile(csvPath, `${leadsToReviewCsv(leads)}\n`, "utf8");
 
-  console.log(`Leídos: ${records.length}. Filtrados: ${filtered.length}. Normalizados: ${normalized.length}. Duplicados: ${duplicateCount}. Exportados: ${leads.length}.`);
-  console.log(`JSON importable: ${jsonPath}`);
-  console.log(`CSV revisión: ${csvPath}`);
+  const priorityCounts: Record<Priority, number> = { A: 0, B: 0, C: 0, D: 0 };
+  for (const lead of leads) priorityCounts[lead.priority ?? "D"] += 1;
+
+  return {
+    recordsRead: records.length,
+    filtered: filtered.length,
+    normalized: normalized.length,
+    duplicateCount,
+    exported: leads.length,
+    discarded: records.length - filtered.length + Math.max(0, normalized.length - cleanProspects.length),
+    priorityCounts,
+    jsonPath,
+    csvPath,
+    leads,
+  };
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+async function main() {
+  const summary = await runProspecting(parseArgs(process.argv.slice(2)));
+  console.log(`Leídos: ${summary.recordsRead}. Filtrados: ${summary.filtered}. Normalizados: ${summary.normalized}. Duplicados: ${summary.duplicateCount}. Exportados: ${summary.exported}.`);
+  console.log(`JSON importable: ${summary.jsonPath}`);
+  console.log(`CSV revisión: ${summary.csvPath}`);
+}
+
+if (process.argv[1]?.endsWith("prospect.ts")) {
+  main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
