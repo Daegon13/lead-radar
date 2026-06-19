@@ -11,6 +11,15 @@ const VALID_DIGITAL_QUALITY = new Set<Lead["digitalPresenceQuality"]>(["none", "
 const VALID_COMMERCIAL_POTENTIAL = new Set<Lead["commercialPotential"]>(["low", "medium", "high"]);
 const VALID_DECISION_ACCESS = new Set<Lead["decisionMakerAccess"]>(["none", "gatekeeper", "reachable", "direct"]);
 const VALID_URGENCY = new Set<Lead["urgencySignal"]>(["none", "low", "medium", "high"]);
+const VALID_OUTCOMES = new Set([
+  "no_answer",
+  "answered_not_interested",
+  "interested",
+  "meeting_booked",
+  "proposal_requested",
+  "won",
+  "lost",
+]);
 
 function cloneLeads(leads: Lead[]): Lead[] {
   return leads.map((lead) => ({ ...lead }));
@@ -39,6 +48,28 @@ function asNumber(value: unknown, fallback: number): number {
 
 function asOptionalNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function asOptionalOutcomeEvent(value: unknown): Lead["lastOutcome"] {
+  if (!isObjectRecord(value) || typeof value.outcome !== "string" || !VALID_OUTCOMES.has(value.outcome)) {
+    return undefined;
+  }
+
+  return {
+    id: asString(value.id, `outcome-${Math.random().toString(36).slice(2, 10)}`),
+    outcome: value.outcome as NonNullable<Lead["lastOutcome"]>["outcome"],
+    occurredAt: asString(value.occurredAt, new Date().toISOString()),
+    note: asOptionalString(value.note),
+  };
+}
+
+function asOptionalOutcomeHistory(value: unknown): Lead["outcomeHistory"] {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const events = value.map(asOptionalOutcomeEvent).filter((event): event is NonNullable<Lead["lastOutcome"]> => Boolean(event));
+  return events.length > 0 ? events : undefined;
 }
 
 function asOptionalStringArray(value: unknown): string[] | undefined {
@@ -143,6 +174,11 @@ function normalizeLead(candidate: unknown): Lead | null {
     lastContactedAt: asOptionalString(candidate.lastContactedAt),
     doNotCallChecked: asOptionalBoolean(candidate.doNotCallChecked),
     optOut: asOptionalBoolean(candidate.optOut),
+    contactAttempts: asOptionalNumber(candidate.contactAttempts),
+    lastOutcome: asOptionalOutcomeEvent(candidate.lastOutcome),
+    outcomeHistory: asOptionalOutcomeHistory(candidate.outcomeHistory),
+    nextFollowUpAt: asOptionalString(candidate.nextFollowUpAt),
+    dealValueEstimate: asOptionalNumber(candidate.dealValueEstimate),
     status: asAllowedString(candidate.status, VALID_STATUSES, "new"),
     nextAction: asAllowedString(candidate.nextAction, VALID_ACTIONS, "follow_up"),
     followUpDate: asOptionalString(candidate.followUpDate),
@@ -300,6 +336,9 @@ export function mapExternalRecordToLead(
     lastContactedAt: asOptionalString(getRecordValue(record, ["lastContactedAt"])),
     doNotCallChecked: parseBooleanLike(getRecordValue(record, ["doNotCallChecked"])),
     optOut: parseBooleanLike(getRecordValue(record, ["optOut"])),
+    contactAttempts: parseNullableNumberLike(getRecordValue(record, ["contactAttempts"])),
+    nextFollowUpAt: asOptionalString(getRecordValue(record, ["nextFollowUpAt"])),
+    dealValueEstimate: parseNullableNumberLike(getRecordValue(record, ["dealValueEstimate"])),
     status: asOptionalString(getRecordValue(record, ["status"])),
     nextAction: asOptionalString(getRecordValue(record, ["nextAction"])),
     followUpDate: asOptionalString(getRecordValue(record, ["followUpDate"])),

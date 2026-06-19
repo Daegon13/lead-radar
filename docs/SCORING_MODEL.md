@@ -226,3 +226,16 @@ calculateProspectFitScore(prospect: NormalizedProspect): ProspectFitScore
 applyPriorityGuards(score: ProspectFitScore, prospect: NormalizedProspect): ProspectFitScore
 buildScoreReasons(prospect: NormalizedProspect): string[]
 ```
+
+## Fase futura — Uso del feedback comercial
+
+La Fase 9 no cambia el score automáticamente y no incorpora ML. Los resultados de llamadas se usan solo para observabilidad comercial: tasa de respuesta, tasa de interés, rubros con mejor respuesta y zonas con mejor respuesta.
+
+En una fase posterior, estos datos podrán informar ajustes manuales y auditables del modelo, por ejemplo:
+
+- subir el peso de rubros que muestran interés sostenido con suficientes intentos;
+- bajar confianza en zonas con muchos intentos sin respuesta;
+- detectar objeciones recurrentes para mejorar `salesAngle`, `callOpening` y `objectionHint`;
+- comparar prioridad estimada contra resultados reales antes de cambiar pesos.
+
+Cualquier ajuste futuro debe documentar la muestra usada, mantener explicación del score y evitar cambios automáticos opacos.
