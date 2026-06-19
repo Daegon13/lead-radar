@@ -16,6 +16,22 @@ export type DecisionMakerAccess = "none" | "gatekeeper" | "reachable" | "direct"
 
 export type UrgencySignal = "none" | "low" | "medium" | "high";
 
+export type LeadOutcomeType =
+  | "no_answer"
+  | "answered_not_interested"
+  | "interested"
+  | "meeting_booked"
+  | "proposal_requested"
+  | "won"
+  | "lost";
+
+export type LeadOutcomeEvent = {
+  id: string;
+  outcome: LeadOutcomeType;
+  occurredAt: string;
+  note?: string;
+};
+
 export type LeadProspectingMetadata = {
   source?: string;
   sourceId?: string;
@@ -31,6 +47,11 @@ export type LeadProspectingMetadata = {
   lastContactedAt?: string;
   doNotCallChecked?: boolean;
   optOut?: boolean;
+  contactAttempts?: number;
+  lastOutcome?: LeadOutcomeEvent;
+  outcomeHistory?: LeadOutcomeEvent[];
+  nextFollowUpAt?: string;
+  dealValueEstimate?: number;
 };
 
 export type ScoreBreakdown = {

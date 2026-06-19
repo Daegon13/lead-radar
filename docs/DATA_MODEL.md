@@ -238,3 +238,15 @@ Campos usados por la cola:
 | `optOut` | Excluye el lead de la cola principal y secundaria operativa. |
 
 Regla de prioridad operativa: un lead con prioridad calculada A pero sin contacto público se degrada a B en la cola y queda fuera de la cola principal hasta completar contacto. Esto respeta la regla de producto de que ningún lead sin contacto público sea prioridad principal.
+
+## Fase 9 — Feedback loop comercial
+
+Los leads aceptan campos opcionales para registrar resultados de contacto sin romper import/export existente ni modificar el scoring automático:
+
+- `contactAttempts`: cantidad acumulada de intentos humanos de contacto.
+- `lastOutcome`: último resultado registrado, con `outcome`, `occurredAt` y nota opcional.
+- `outcomeHistory`: historial local de resultados de llamadas.
+- `nextFollowUpAt`: fecha sugerida para el próximo seguimiento comercial.
+- `dealValueEstimate`: estimación manual del valor potencial del deal.
+
+Estos campos siguen el enfoque local-first: se guardan junto con el lead en `localStorage` y se exportan en JSON. En CSV se aceptan `contactAttempts`, `nextFollowUpAt` y `dealValueEstimate` como columnas simples; el historial completo se preserva mejor en JSON.

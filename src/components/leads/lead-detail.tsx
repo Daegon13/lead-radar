@@ -5,6 +5,7 @@ import Link from "next/link";
 import { scoreLead } from "@/lib/scoring";
 import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { Lead, LeadFormValues } from "@/types/lead";
+import { CommercialFeedbackPanel } from "@/components/leads/commercial-feedback-panel";
 import { StatusQuickActions } from "@/components/leads/status-quick-actions";
 
 const DIGITAL_QUALITY_LABELS: Record<Lead["digitalPresenceQuality"], string> = {
@@ -239,6 +240,8 @@ export function LeadDetail({ lead, onQuickUpdate }: LeadDetailProps) {
               </ul>
             </div>
           </section>
+
+          <CommercialFeedbackPanel lead={lead} onChange={onQuickUpdate} />
 
           <StatusQuickActions
             status={lead.status}
