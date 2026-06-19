@@ -242,3 +242,22 @@ Mejorar enriquecimiento con APIs oficiales o datasets más complejos.
 4. PR: scoring explicable.
 5. PR: digital gap.
 6. PR: UI de resultados reales.
+
+## Fase 8 — Cola diaria de llamadas
+
+### Objetivo
+
+Crear una vista de trabajo para que Diego abra una pantalla y sepa a quién llamar primero sin automatizar contactos.
+
+### Entregables
+
+- Ruta `/call-queue` integrada en la navegación principal.
+- Cola principal con leads A/B contactables primero.
+- Acciones rápidas manuales para registrar resultado de llamada.
+- Notas y actualización de `lastContactedAt` en el lead existente.
+
+### Criterios de aceptación
+
+- Los leads sin teléfono, WhatsApp o Instagram no entran en la cola principal aunque tengan score alto.
+- Las acciones rápidas actualizan `status`, `nextAction`, `notes`, `lastContactedAt` y `updatedAt` sin crear un modelo paralelo.
+- La pantalla mantiene el enfoque local-first y no dispara llamadas ni mensajes automáticos.

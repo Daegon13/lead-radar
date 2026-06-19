@@ -219,3 +219,22 @@ Campos principales:
 | `raw` | Registro original para auditoría o debugging. |
 
 Esta estructura permite soportar datos incompletos sin inflar prioridad: si faltan teléfono, website o coordenadas, el prospecto puede existir, pero la deduplicación y confianza quedan limitadas a las señales disponibles.
+
+## Fase 8 — Cola diaria de llamadas
+
+La cola diaria reutiliza `Lead` para mantener compatibilidad local-first. No crea una entidad separada de actividad todavía.
+
+Campos usados por la cola:
+
+| Campo | Uso en Call Queue |
+|---|---|
+| `phone`, `whatsapp`, `instagram` | Determinan si el lead puede entrar en la cola principal. |
+| `priority` calculada / score | Ordena la cola junto con score y próxima acción. |
+| `scoreReasons`, `problemObservation`, `salesAngle` | Motivo de oportunidad mostrado antes de llamar. |
+| `callOpening` | Apertura sugerida para llamada humana. |
+| `nextAction` | Acción operativa pendiente. |
+| `notes` | Historial liviano de notas manuales append-only. |
+| `lastContactedAt` | Último contacto registrado por una acción rápida. |
+| `optOut` | Excluye el lead de la cola principal y secundaria operativa. |
+
+Regla de prioridad operativa: un lead con prioridad calculada A pero sin contacto público se degrada a B en la cola y queda fuera de la cola principal hasta completar contacto. Esto respeta la regla de producto de que ningún lead sin contacto público sea prioridad principal.

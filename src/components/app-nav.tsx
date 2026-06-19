@@ -7,6 +7,7 @@ import { ENABLE_EXTERNAL_PROSPECTING_FLOW } from "@/lib/constants";
 
 const NAV_ITEMS = [
   { href: "/leads", label: "Leads" },
+  { href: "/call-queue", label: "Call Queue" },
   ...(ENABLE_EXTERNAL_PROSPECTING_FLOW ? [{ href: "/prospecting", label: "Prospecting" as const }] : []),
   { href: "/settings", label: "Settings" },
 ] as const;
