@@ -41,7 +41,7 @@ export default function LeadsPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Lista operativa persistida en localStorage para priorizar oportunidades.
+            Lista operativa persistida localmente para priorizar oportunidades.
           </p>
         </div>
 

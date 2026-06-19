@@ -41,7 +41,7 @@ export default function MetricsPage() {
         <MetricCard label="Llamados realizados" value={stats.totalContactAttempts} help={`${stats.contactedLeads} leads con al menos un intento`} />
         <MetricCard label="Tasa de respuesta" value={`${stats.responseRate}%`} help="Respuestas sobre intentos registrados" />
         <MetricCard label="Tasa de interés" value={`${stats.interestRate}%`} help="Interés, reunión, propuesta o ganado" />
-        <MetricCard label="Leads cargados" value={leads.length} help="Persistidos en localStorage" />
+        <MetricCard label="Leads cargados" value={leads.length} help="Persistidos localmente" />
       </div>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
