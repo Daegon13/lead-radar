@@ -22,6 +22,7 @@ export type LeadProspectingMetadata = {
   sourceUrl?: string;
   sourceCheckedAt?: string;
   confidence?: number;
+  priority?: Priority;
   gapSignals?: string[];
   scoreReasons?: string[];
   salesAngle?: string;

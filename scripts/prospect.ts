@@ -3,6 +3,7 @@ import path from "node:path";
 import process from "node:process";
 
 import { dedupeProspects } from "../src/lib/prospecting/dedupe";
+import { calculateProspectFitScore } from "../src/lib/prospecting/fit-score";
 import { normalizeProspects, type NormalizedProspectRecord } from "../src/lib/prospecting/normalize";
 import type { Lead, LeadFormValues } from "../src/types/lead";
 
@@ -173,12 +174,9 @@ function buildLead(prospect: NormalizedProspectRecord, row: number): Lead {
   const whatsapp = prospect.socials.whatsapp;
   const source = prospect.source;
   const sourceId = prospect.sourceId ?? `local-${row}`;
-  const gapSignals = websiteUrl ? ["Tiene sitio web normalizado: requiere revisión manual de calidad"] : ["No se detectó sitio web en el archivo fuente normalizado"];
-  const scoreReasons = [
-    `Rubro normalizado/importado: ${category}`,
-    phone || whatsapp || instagram || prospect.email ? "Tiene al menos un contacto público normalizado" : "Contacto público no detectado; prioridad limitada",
-    websiteUrl ? "Brecha digital pendiente de validar manualmente" : "Brecha digital inicial: sin sitio web informado",
-  ];
+  const fitScore = calculateProspectFitScore(prospect);
+  const gapSignals = fitScore.gapSignals;
+  const scoreReasons = fitScore.scoreReasons;
 
   const values: LeadFormValues = {
     businessName,
@@ -200,21 +198,20 @@ function buildLead(prospect: NormalizedProspectRecord, row: number): Lead {
       ? "Prospecto importado desde archivo local; revisar calidad del sitio y señales comerciales antes de contactar."
       : "Prospecto importado desde archivo local sin sitio web informado; validar brecha digital antes de contactar.",
     status: "new",
-    nextAction: phone || whatsapp ? "call_today" : instagram ? "dm_or_whatsapp" : "follow_up",
+    nextAction: fitScore.nextAction,
     notes: `Generado por CLI local desde ${source}. No proviene de scraping ni API real.`,
     demoRecommended: !websiteUrl,
     source,
     sourceId,
     sourceUrl: prospect.sourceUrl,
     sourceCheckedAt: now,
-    confidence: phone || whatsapp || instagram ? 0.7 : 0.45,
+    confidence: fitScore.gap.confidence,
+    priority: fitScore.priority,
     gapSignals,
     scoreReasons,
-    salesAngle: websiteUrl
-      ? "Auditoría breve para detectar mejoras de conversión en presencia digital existente."
-      : "Presencia web básica para captar consultas locales y explicar servicios con claridad.",
-    callOpening: `Hola, vi a ${businessName} en un listado local y quería validar si hoy tienen una web que les genere consultas.`,
-    objectionHint: "Si ya tienen proveedor, ofrecer diagnóstico puntual y no reemplazo inmediato.",
+    salesAngle: fitScore.salesAngle,
+    callOpening: fitScore.callOpening,
+    objectionHint: fitScore.objectionHint,
     doNotCallChecked: false,
     optOut: false,
   };
@@ -233,7 +230,7 @@ function toCsvValue(value: unknown): string {
 }
 
 function leadsToReviewCsv(leads: Lead[]): string {
-  const headers = ["businessName", "category", "location", "address", "phone", "whatsapp", "instagram", "websiteUrl", "nextAction", "confidence", "gapSignals", "scoreReasons"];
+  const headers = ["businessName", "category", "location", "address", "phone", "whatsapp", "instagram", "websiteUrl", "priority", "nextAction", "confidence", "gapSignals", "scoreReasons"];
   return [headers.join(","), ...leads.map((lead) => headers.map((header) => toCsvValue(lead[header as keyof Lead])).join(","))].join("\n");
 }
 
