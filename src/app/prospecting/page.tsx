@@ -19,11 +19,9 @@ import {
   getProspectingHotspotById,
   type ProspectingHotspot,
 } from "@/lib/prospecting-hotspots";
-import {
-  buildLeadDedupKey,
-  type ExternalProspectResult,
-  mapExternalResultToLeadFormValues,
-} from "@/lib/prospecting-adapter";
+import { buildLeadDedupKey } from "@/lib/prospecting-adapter";
+import { mockProspectingProvider } from "@/lib/prospecting/providers/mock-provider";
+import type { ProspectingRunInput } from "@/lib/prospecting/types";
 import type { Lead, LeadFormValues } from "@/types/lead";
 
 type SearchFormState = {
@@ -50,40 +48,6 @@ function createProspectId(index: number): string {
 
 function createLeadId(): string {
   return `lead-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function buildMockExternalResults(form: SearchFormState): ExternalProspectResult[] {
-  const areaLabel = `${form.rubro.trim() || "Negocio"} (${form.lat.trim()}, ${form.lng.trim()})`;
-
-  return [
-    {
-      nombre: `${areaLabel} Norte`,
-      tipo: form.rubro.trim() || "Comercio",
-      vicinity: "Zona Norte",
-      address: "Av. Principal 123",
-      rating: 4.4,
-      user_ratings_total: 82,
-      website: "https://ejemplo-negocio-norte.com",
-      phone: "+54 11 4000-1111",
-    },
-    {
-      nombre: `${areaLabel} Centro`,
-      tipo: form.rubro.trim() || "Comercio",
-      vicinity: "Centro",
-      address: "Calle 9 de Julio 550",
-      rating: 3.9,
-      user_ratings_total: 27,
-      phone: "+54 11 4555-2020",
-    },
-    {
-      nombre: `${areaLabel} Sur`,
-      tipo: form.rubro.trim() || "Comercio",
-      vicinity: "Zona Sur",
-      address: "Mitre 920",
-      rating: null,
-      user_ratings_total: 0,
-    },
-  ];
 }
 
 function materializeLead(values: LeadFormValues): Lead {
@@ -173,7 +137,7 @@ export default function ProspectingPage() {
     }));
   }
 
-  function buildCandidatesForSearch(
+  async function buildCandidatesForSearch(
     searchForm: SearchFormState,
     options?: {
       maxCandidates?: number;
@@ -181,14 +145,21 @@ export default function ProspectingPage() {
       startIndex?: number;
       batchKeys?: Set<string>;
     },
-  ): ProspectCandidate[] {
-    const maxCandidates = options?.maxCandidates;
-    const externalResults = buildMockExternalResults(searchForm);
-    const limitedResults = typeof maxCandidates === "number" ? externalResults.slice(0, maxCandidates) : externalResults;
+  ): Promise<ProspectCandidate[]> {
     const batchKeys = options?.batchKeys ?? new Set<string>();
+    const runInput: ProspectingRunInput = {
+      lat: Number(searchForm.lat),
+      lng: Number(searchForm.lng),
+      radiusMeters: Number(searchForm.radio),
+      category: searchForm.rubro,
+      hotspotId: options?.hotspot?.id,
+      hotspotLabel: options?.hotspot?.label,
+      maxResults: options?.maxCandidates,
+    };
+    const result = await mockProspectingProvider.run(runInput);
 
-    return limitedResults.map((external, index) => {
-      const values = mapExternalResultToLeadFormValues(external);
+    return result.prospects.map((prospect, index) => {
+      const values = prospect.leadValues;
       const key = buildLeadDedupKey({
         businessName: values.businessName,
         address: values.address,
@@ -214,7 +185,7 @@ export default function ProspectingPage() {
     });
   }
 
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const lat = Number(form.lat);
@@ -227,7 +198,7 @@ export default function ProspectingPage() {
     }
 
     const hotspot = form.strategicPointId !== MANUAL_STRATEGIC_POINT_ID ? getProspectingHotspotById(form.strategicPointId) : undefined;
-    const mappedCandidates = buildCandidatesForSearch(form, { hotspot });
+    const mappedCandidates = await buildCandidatesForSearch(form, { hotspot });
 
     if (hotspot) {
       setHotspotRuns(recordHotspotRun(hotspot.id));
@@ -238,7 +209,7 @@ export default function ProspectingPage() {
     setFeedback(`Se encontraron ${mappedCandidates.length} candidatos simulados para revisar.`);
   }
 
-  function handleSuggestedRun() {
+  async function handleSuggestedRun() {
     const limits = DEFAULT_PROSPECTING_EXECUTION_LIMITS;
     const plan = planSuggestedHotspotRun(enabledHotspots, hotspotRuns, limits);
 
@@ -267,7 +238,7 @@ export default function ProspectingPage() {
       };
 
       const maxForZone = Math.min(limits.maxCandidatesPerZone, remainingForRun);
-      const zoneCandidates = buildCandidatesForSearch(searchForm, {
+      const zoneCandidates = await buildCandidatesForSearch(searchForm, {
         maxCandidates: maxForZone,
         hotspot: entry.hotspot,
         startIndex: indexOffset,
