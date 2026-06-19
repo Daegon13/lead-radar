@@ -1,9 +1,8 @@
 import { seedLeads } from "@/data/seed-leads";
 import { calculateProspectFitScore } from "@/lib/prospecting/fit-score";
 import { normalizeProspect } from "@/lib/prospecting/normalize";
+import { leadStore } from "@/lib/storage/lead-store";
 import type { Lead } from "@/types/lead";
-
-const LEADS_STORAGE_KEY = "lead-radar:leads";
 
 const VALID_STATUSES = new Set<Lead["status"]>(["new", "contacted", "qualified", "proposal", "won", "lost"]);
 const VALID_ACTIONS = new Set<Lead["nextAction"]>(["call_today", "dm_or_whatsapp", "follow_up", "disqualify"]);
@@ -491,29 +490,17 @@ function normalizeLeadsArray(input: unknown): Lead[] | null {
 }
 
 export function loadLeads(): Lead[] | null {
-  if (typeof window === "undefined") {
+  const snapshot = leadStore.loadSnapshot();
+
+  if (!snapshot.rawLeads) {
     return null;
   }
 
-  const rawValue = window.localStorage.getItem(LEADS_STORAGE_KEY);
-
-  if (!rawValue) {
-    return null;
-  }
-
-  try {
-    return normalizeLeadsArray(JSON.parse(rawValue));
-  } catch {
-    return null;
-  }
+  return normalizeLeadsArray(snapshot.rawLeads);
 }
 
 export function saveLeads(leads: Lead[]): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
+  leadStore.saveLeads(leads);
 }
 
 export function exportLeadsAsJson(leads: Lead[]): string {

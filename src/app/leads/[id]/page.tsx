@@ -37,7 +37,7 @@ export default function LeadDetailPage({ params }: LeadDetailPageProps) {
     return (
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold tracking-tight">Lead no encontrado</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">No existe un lead con ID {id} en localStorage.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">No existe un lead con ID {id} en la persistencia local.</p>
         <Link
           href="/leads"
           className="text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"

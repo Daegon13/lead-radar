@@ -211,20 +211,32 @@ Comando objetivo:
 npm run prospect:run -- --input ./data/pois.csv --country UY --city Montevideo --category estetica --limit 50 --out ./exports
 ```
 
-## Migración futura a SQLite
 
-Cuando haya valor probado, migrar de `localStorage` a SQLite local o una capa híbrida.
+## Fase 11 — Persistencia local robusta
 
-Ventajas:
+Estado implementado:
 
-- historial de corridas;
-- mejor dedupe;
-- métricas de conversión;
-- feedback loop;
-- consultas por estado/fecha/rubro;
-- persistencia más robusta.
+- La fuente efectiva de datos sigue siendo `localStorage` para no romper los datos existentes ni el import/export actual.
+- El acceso físico al backend quedó encapsulado en `src/lib/storage/lead-store.ts` mediante un `LeadStore` con operaciones de carga, guardado y limpieza.
+- `src/lib/storage.ts` conserva la normalización, validación, importación y exportación de leads, pero ya no accede directamente a `window.localStorage`.
+- Las nuevas features deben consumir funciones de storage o hooks existentes, no leer/escribir `localStorage` desde componentes de UI.
 
-No hacerlo antes de validar el motor.
+Auditoría de lectura/escritura actual:
+
+- `useLeads` inicializa la app con `loadOrInitializeLeads`, guarda cambios con `saveLeads` y resetea con `resetStoredLeads`.
+- `src/lib/storage.ts` centraliza normalización, seed inicial, import/export JSON/CSV y deduplicación de imports.
+- Algunas preferencias auxiliares, como políticas de ejecución de hotspots, aún usan claves propias de `localStorage` porque no forman parte del repositorio de leads.
+
+Plan seguro para SQLite posterior:
+
+1. Agregar un nuevo backend que implemente la misma interfaz `LeadStore` sin cambiar la UI.
+2. Mantener `localStorage` como fuente de migración inicial: leer la clave `lead-radar:leads`, normalizar con las funciones actuales y escribir registros en SQLite.
+3. Guardar metadata de migración, por ejemplo versión de schema y fecha, para evitar migraciones repetidas.
+4. Preservar los IDs actuales de leads para no romper rutas `/leads/[id]` ni relaciones futuras.
+5. Mantener import/export JSON/CSV sobre `Lead[]` normalizados, independiente del backend.
+6. Recién después de validar integridad y consultas, cambiar el backend por defecto.
+
+Criterio de compatibilidad: si SQLite no está disponible o falla la migración, la app debe poder seguir usando `localStorage` sin pérdida de leads.
 
 ## Call Queue
 
