@@ -212,3 +212,35 @@ Con suficientes llamadas, Lead Radar debe poder mostrar:
 - pitch más efectivo;
 - tasa de interés por prioridad;
 - tasa de cierre por rubro.
+
+## Fase 6 — Generación determinística de ángulo comercial
+
+La Fase 6 incorpora un generador local y editable en `src/lib/prospecting/sales-angle.ts`. No usa IA externa ni APIs: combina rubro normalizado, nivel de brecha digital y señales detectadas para producir:
+
+- `salesAngle`: diagnóstico comercial resumido para Diego.
+- `callOpening`: apertura breve, respetuosa y consultiva.
+- `objectionHint`: objeción probable con respuesta sugerida.
+- `nextAction`: acción recomendada según prioridad y contactabilidad.
+
+Reglas de copy:
+
+1. No acusar al negocio ni decir “no tenés web” como crítica.
+2. Hablar de oportunidad, confianza, claridad y conversión.
+3. Mencionar señales observables: red visible, teléfono/WhatsApp, web informada, brecha o dependencia de redes.
+4. Presentar la web como complemento de Instagram, WhatsApp o agenda externa.
+5. Pedir permiso para comentar el diagnóstico en pocos segundos.
+
+Rubros soportados por plantillas específicas:
+
+- estética;
+- odontología;
+- inmobiliaria;
+- construcción/arquitectura/interiorismo;
+- abogados/contadores/gestorías;
+- veterinarias;
+- barberías/peluquerías premium;
+- academias;
+- estudios de tatuaje;
+- gimnasios boutique/pilates/yoga.
+
+Si el rubro no matchea una plantilla, el sistema usa una plantilla genérica para negocios locales de servicios.
