@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 
 import { useLeads } from "@/hooks/use-leads";
 import { ENABLE_EXTERNAL_PROSPECTING_FLOW } from "@/lib/constants";
@@ -20,6 +20,7 @@ import {
   type ProspectingHotspot,
 } from "@/lib/prospecting-hotspots";
 import { buildLeadDedupKey } from "@/lib/prospecting-adapter";
+import { scoreLead } from "@/lib/scoring";
 import { mockProspectingProvider } from "@/lib/prospecting/providers/mock-provider";
 import type { ProspectingRunInput } from "@/lib/prospecting/types";
 import type { Lead, LeadFormValues } from "@/types/lead";
@@ -38,6 +39,7 @@ type ProspectCandidate = {
   hotspotLabel?: string;
   values: LeadFormValues;
   dedupeReason: "existing" | "batch" | null;
+  origin: "mock" | "json";
 };
 
 const MANUAL_STRATEGIC_POINT_ID = "manual";
@@ -48,6 +50,47 @@ function createProspectId(index: number): string {
 
 function createLeadId(): string {
   return `lead-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function isLeadLike(value: unknown): value is Lead | LeadFormValues {
+  return (
+    isRecord(value) &&
+    typeof value.businessName === "string" &&
+    typeof value.category === "string" &&
+    typeof value.location === "string" &&
+    typeof value.hasWebsite === "boolean" &&
+    typeof value.reviewCount === "number" &&
+    typeof value.digitalPresenceQuality === "string" &&
+    typeof value.commercialPotential === "string" &&
+    typeof value.decisionMakerAccess === "string" &&
+    typeof value.urgencySignal === "string" &&
+    typeof value.status === "string" &&
+    typeof value.nextAction === "string"
+  );
+}
+
+function leadLikeToFormValues(value: Lead | LeadFormValues): LeadFormValues {
+  const leadRecord = value as Lead;
+  const values = { ...leadRecord };
+  delete (values as Partial<Lead>).id;
+  delete (values as Partial<Lead>).createdAt;
+  delete (values as Partial<Lead>).updatedAt;
+  return {
+    ...values,
+    hasWebsite: values.hasWebsite ?? Boolean(values.websiteUrl),
+    gapSignals: asStringArray(values.gapSignals),
+    scoreReasons: asStringArray(values.scoreReasons),
+  };
 }
 
 function materializeLead(values: LeadFormValues): Lead {
@@ -87,24 +130,33 @@ export default function ProspectingPage() {
     radio: "",
     rubro: "",
   });
-  const [hotspotRuns, setHotspotRuns] = useState<HotspotRunRegistry>(() => loadHotspotRunRegistry());
+  const [hotspotRuns, setHotspotRuns] = useState<HotspotRunRegistry>(() =>
+    loadHotspotRunRegistry(),
+  );
   const [candidates, setCandidates] = useState<ProspectCandidate[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const existingKeys = useMemo(() => new Set(leads.map((lead) => buildLeadDedupKey(lead))), [leads]);
-
+  const existingKeys = useMemo(
+    () => new Set(leads.map((lead) => buildLeadDedupKey(lead))),
+    [leads],
+  );
 
   if (!ENABLE_EXTERNAL_PROSPECTING_FLOW) {
     return (
       <section className="space-y-4">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Prospección externa</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Prospección externa
+          </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Este flujo está deshabilitado por política del proyecto.
           </p>
         </header>
-        <Link href="/leads" className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+        <Link
+          href="/leads"
+          className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+        >
           ← Volver a leads
         </Link>
       </section>
@@ -181,6 +233,7 @@ export default function ProspectingPage() {
         hotspotLabel: options?.hotspot?.label,
         values,
         dedupeReason,
+        origin: "mock",
       };
     });
   }
@@ -192,12 +245,22 @@ export default function ProspectingPage() {
     const lng = Number(form.lng);
     const radius = Number(form.radio);
 
-    if (!form.rubro.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
-      setFeedback("Completá lat/lng/radio numéricos y rubro para buscar prospectos.");
+    if (
+      !form.rubro.trim() ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      !Number.isFinite(radius)
+    ) {
+      setFeedback(
+        "Completá lat/lng/radio numéricos y rubro para buscar prospectos.",
+      );
       return;
     }
 
-    const hotspot = form.strategicPointId !== MANUAL_STRATEGIC_POINT_ID ? getProspectingHotspotById(form.strategicPointId) : undefined;
+    const hotspot =
+      form.strategicPointId !== MANUAL_STRATEGIC_POINT_ID
+        ? getProspectingHotspotById(form.strategicPointId)
+        : undefined;
     const mappedCandidates = await buildCandidatesForSearch(form, { hotspot });
 
     if (hotspot) {
@@ -205,8 +268,14 @@ export default function ProspectingPage() {
     }
 
     setCandidates(mappedCandidates);
-    setSelectedIds(mappedCandidates.filter((item) => item.dedupeReason === null).map((item) => item.id));
-    setFeedback(`Se encontraron ${mappedCandidates.length} candidatos simulados para revisar.`);
+    setSelectedIds(
+      mappedCandidates
+        .filter((item) => item.dedupeReason === null)
+        .map((item) => item.id),
+    );
+    setFeedback(
+      `Se encontraron ${mappedCandidates.length} candidatos simulados para revisar.`,
+    );
   }
 
   async function handleSuggestedRun() {
@@ -214,7 +283,9 @@ export default function ProspectingPage() {
     const plan = planSuggestedHotspotRun(enabledHotspots, hotspotRuns, limits);
 
     if (plan.length === 0) {
-      setFeedback("No hay hotspots disponibles para corrida sugerida (todos están en enfriamiento).");
+      setFeedback(
+        "No hay hotspots disponibles para corrida sugerida (todos están en enfriamiento).",
+      );
       return;
     }
 
@@ -251,19 +322,31 @@ export default function ProspectingPage() {
     }
 
     if (aggregated.length === 0) {
-      setFeedback("La corrida sugerida no devolvió candidatos dentro de los límites configurados.");
+      setFeedback(
+        "La corrida sugerida no devolvió candidatos dentro de los límites configurados.",
+      );
       return;
     }
 
     setCandidates(aggregated);
-    setSelectedIds(aggregated.filter((item) => item.dedupeReason === null).map((item) => item.id));
+    setSelectedIds(
+      aggregated
+        .filter((item) => item.dedupeReason === null)
+        .map((item) => item.id),
+    );
 
-    const executedHotspotIds = Array.from(new Set(aggregated.flatMap((item) => (item.hotspotId ? [item.hotspotId] : []))));
+    const executedHotspotIds = Array.from(
+      new Set(
+        aggregated.flatMap((item) => (item.hotspotId ? [item.hotspotId] : [])),
+      ),
+    );
     if (executedHotspotIds.length > 0) {
       setHotspotRuns(recordHotspotBatchRun(executedHotspotIds));
     }
 
-    setFeedback(`Corrida sugerida generó ${aggregated.length} candidatos en ${executedHotspotIds.length} zonas.`);
+    setFeedback(
+      `Corrida sugerida generó ${aggregated.length} candidatos en ${executedHotspotIds.length} zonas.`,
+    );
   }
 
   function toggleSelection(candidateId: string, checked: boolean) {
@@ -276,8 +359,99 @@ export default function ProspectingPage() {
     });
   }
 
+  async function handleImportJson(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      const records = Array.isArray(parsed)
+        ? parsed
+        : isRecord(parsed) && Array.isArray(parsed.leads)
+          ? parsed.leads
+          : isRecord(parsed) && Array.isArray(parsed.records)
+            ? parsed.records
+            : [];
+      const batchKeys = new Set<string>();
+      const importedCandidates = records
+        .filter(isLeadLike)
+        .map((record, index) => {
+          const values = leadLikeToFormValues(record);
+          const key = buildLeadDedupKey({
+            businessName: values.businessName,
+            address: values.address,
+            location: values.location,
+          });
+
+          let dedupeReason: ProspectCandidate["dedupeReason"] = null;
+          if (existingKeys.has(key)) {
+            dedupeReason = "existing";
+          } else if (batchKeys.has(key)) {
+            dedupeReason = "batch";
+          }
+
+          batchKeys.add(key);
+
+          return {
+            id: createProspectId(index),
+            hotspotLabel: "JSON importado",
+            values,
+            dedupeReason,
+            origin: "json" as const,
+          };
+        });
+
+      setCandidates(importedCandidates);
+      setSelectedIds(
+        importedCandidates
+          .filter((item) => item.dedupeReason === null)
+          .map((item) => item.id),
+      );
+      setFeedback(
+        `Se importaron ${importedCandidates.length} prospectos desde ${file.name}. ${records.length - importedCandidates.length} registros no tenían formato compatible.`,
+      );
+    } catch (error) {
+      setFeedback(
+        `No se pudo importar el JSON: ${error instanceof Error ? error.message : "archivo inválido"}.`,
+      );
+    }
+  }
+
+  function handleAddCandidate(candidateId: string) {
+    const candidate = candidates.find((item) => item.id === candidateId);
+    if (!candidate) return;
+
+    const key = buildLeadDedupKey({
+      businessName: candidate.values.businessName,
+      address: candidate.values.address,
+      location: candidate.values.location,
+    });
+
+    if (existingKeys.has(key) || candidate.dedupeReason !== null) {
+      setFeedback(
+        "Este prospecto ya existe como lead o está duplicado en el lote.",
+      );
+      return;
+    }
+
+    createLead(candidate.values);
+    setCandidates((current) =>
+      current.map((item) =>
+        item.id === candidateId ? { ...item, dedupeReason: "existing" } : item,
+      ),
+    );
+    setSelectedIds((current) => current.filter((id) => id !== candidateId));
+    setFeedback(`Se guardó ${candidate.values.businessName} como lead.`);
+  }
+
   function handleAddSelected() {
-    const selectedCandidates = candidates.filter((candidate) => selectedIds.includes(candidate.id));
+    const selectedCandidates = candidates.filter((candidate) =>
+      selectedIds.includes(candidate.id),
+    );
     const seenKeys = new Set(existingKeys);
     const selectedLeads: Lead[] = [];
     let singleLeadValues: LeadFormValues | null = null;
@@ -301,7 +475,9 @@ export default function ProspectingPage() {
     }
 
     if (selectedLeads.length === 0) {
-      setFeedback("No hay candidatos nuevos para agregar (todos estaban duplicados).");
+      setFeedback(
+        "No hay candidatos nuevos para agregar (todos estaban duplicados).",
+      );
       return;
     }
 
@@ -320,14 +496,19 @@ export default function ProspectingPage() {
   return (
     <section className="space-y-4">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Prospección externa</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Prospección externa
+        </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Buscá por geolocalización y rubro, revisá candidatos y agregá los seleccionados al pipeline local.
+          Buscá con el mock, importá JSON generado por prospect:run, revisá
+          candidatos y guardalos en el pipeline local.
         </p>
       </header>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="mb-3 text-sm font-semibold">Estado por hotspot habilitado</h2>
+        <h2 className="mb-3 text-sm font-semibold">
+          Estado por hotspot habilitado
+        </h2>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
@@ -339,10 +520,15 @@ export default function ProspectingPage() {
             </thead>
             <tbody>
               {enabledHotspots.map((hotspot) => (
-                <tr key={hotspot.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
+                <tr
+                  key={hotspot.id}
+                  className="border-b border-zinc-100 last:border-0 dark:border-zinc-900"
+                >
                   <td className="px-2 py-2">{hotspot.label}</td>
                   <td className="px-2 py-2">{hotspot.commercialPriority}</td>
-                  <td className="px-2 py-2">{formatLastRun(hotspotRuns[hotspot.id]?.lastRunAt)}</td>
+                  <td className="px-2 py-2">
+                    {formatLastRun(hotspotRuns[hotspot.id]?.lastRunAt)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -350,14 +536,19 @@ export default function ProspectingPage() {
         </div>
       </section>
 
-      <form onSubmit={handleSearch} className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <form
+        onSubmit={handleSearch}
+        className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+      >
         <div className="mb-3">
           <label className="space-y-1 text-sm">
             <span>Punto estratégico</span>
             <select
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
               value={form.strategicPointId}
-              onChange={(event) => handleStrategicPointChange(event.target.value)}
+              onChange={(event) =>
+                handleStrategicPointChange(event.target.value)
+              }
             >
               <option value={MANUAL_STRATEGIC_POINT_ID}>Manual</option>
               {enabledHotspots.map((point) => (
@@ -371,19 +562,35 @@ export default function ProspectingPage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1 text-sm">
             <span>Lat *</span>
-            <input className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={form.lat} onChange={(event) => updateField("lat", event.target.value)} />
+            <input
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              value={form.lat}
+              onChange={(event) => updateField("lat", event.target.value)}
+            />
           </label>
           <label className="space-y-1 text-sm">
             <span>Lng *</span>
-            <input className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={form.lng} onChange={(event) => updateField("lng", event.target.value)} />
+            <input
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              value={form.lng}
+              onChange={(event) => updateField("lng", event.target.value)}
+            />
           </label>
           <label className="space-y-1 text-sm">
             <span>Radio (m) *</span>
-            <input className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={form.radio} onChange={(event) => updateField("radio", event.target.value)} />
+            <input
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              value={form.radio}
+              onChange={(event) => updateField("radio", event.target.value)}
+            />
           </label>
           <label className="space-y-1 text-sm">
             <span>Rubro *</span>
-            <input className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm" value={form.rubro} onChange={(event) => updateField("rubro", event.target.value)} />
+            <input
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              value={form.rubro}
+              onChange={(event) => updateField("rubro", event.target.value)}
+            />
           </label>
         </div>
         <div className="mt-4 flex items-center gap-2">
@@ -400,11 +607,39 @@ export default function ProspectingPage() {
           >
             Corrida sugerida
           </button>
-          <Link href="/leads" className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+          <Link
+            href="/leads"
+            className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+          >
             Volver a leads
           </Link>
         </div>
       </form>
+
+      <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold">
+              Importar resultados reales
+            </h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              El navegador no puede leer directamente el filesystem del runner.
+              Cargá manualmente el archivo{" "}
+              <code>lead-radar-prospects.json</code> generado por{" "}
+              <code>npm run prospect:run</code>.
+            </p>
+          </div>
+          <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900">
+            Importar JSON
+            <input
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={handleImportJson}
+            />
+          </label>
+        </div>
+      </section>
 
       {feedback ? (
         <p className="rounded-md border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
@@ -424,42 +659,141 @@ export default function ProspectingPage() {
                   <th className="px-2 py-2">Rubro</th>
                   <th className="px-2 py-2">Ubicación</th>
                   <th className="px-2 py-2">Dirección</th>
-                  <th className="px-2 py-2">Rating</th>
-                  <th className="px-2 py-2">Reseñas</th>
                   <th className="px-2 py-2">Contacto</th>
+                  <th className="px-2 py-2">Website</th>
+                  <th className="px-2 py-2">Priority</th>
+                  <th className="px-2 py-2">Score</th>
+                  <th className="px-2 py-2">Diagnóstico</th>
+                  <th className="px-2 py-2">Acción</th>
                   <th className="px-2 py-2">Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {candidates.map((candidate) => (
-                  <tr key={candidate.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-900">
-                    <td className="px-2 py-2 align-top">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(candidate.id)}
-                        disabled={candidate.dedupeReason !== null}
-                        onChange={(event) => toggleSelection(candidate.id, event.target.checked)}
-                      />
-                    </td>
-                    <td className="px-2 py-2 align-top">{candidate.hotspotLabel ?? "Manual"}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.businessName}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.category}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.location}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.address ?? "-"}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.rating ?? "-"}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.reviewCount}</td>
-                    <td className="px-2 py-2 align-top">{candidate.values.websiteUrl ?? candidate.values.phone ?? "-"}</td>
-                    <td className="px-2 py-2 align-top text-xs">
-                      {candidate.dedupeReason === "existing" ? (
-                        <span className="rounded bg-amber-100 px-2 py-1 text-amber-700">Duplicado existente</span>
-                      ) : candidate.dedupeReason === "batch" ? (
-                        <span className="rounded bg-orange-100 px-2 py-1 text-orange-700">Duplicado en lote</span>
-                      ) : (
-                        <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-700">Nuevo</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {candidates.map((candidate) => {
+                  const leadForScore = materializeLead(candidate.values);
+                  const score = scoreLead(leadForScore);
+                  const contact = [
+                    candidate.values.phone,
+                    candidate.values.whatsapp,
+                    candidate.values.instagram,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+                  const priority = candidate.values.priority ?? score.priority;
+
+                  return (
+                    <tr
+                      key={candidate.id}
+                      className="border-b border-zinc-100 last:border-0 dark:border-zinc-900"
+                    >
+                      <td className="px-2 py-2 align-top">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(candidate.id)}
+                          disabled={candidate.dedupeReason !== null}
+                          onChange={(event) =>
+                            toggleSelection(candidate.id, event.target.checked)
+                          }
+                        />
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        {candidate.hotspotLabel ??
+                          (candidate.origin === "mock" ? "Mock" : "JSON")}
+                      </td>
+                      <td className="px-2 py-2 align-top font-medium">
+                        {candidate.values.businessName}
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        {candidate.values.category}
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        {candidate.values.location}
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        {candidate.values.address ?? "-"}
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        {contact || "Sin contacto público"}
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        {candidate.values.websiteUrl ? (
+                          <a
+                            className="text-blue-600 hover:underline"
+                            href={candidate.values.websiteUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Detectado
+                          </a>
+                        ) : (
+                          "Sin website"
+                        )}
+                      </td>
+                      <td className="px-2 py-2 align-top font-semibold">
+                        {priority}
+                      </td>
+                      <td className="px-2 py-2 align-top">{score.total}/100</td>
+                      <td className="min-w-80 px-2 py-2 align-top text-xs text-zinc-600 dark:text-zinc-300">
+                        <div className="space-y-2">
+                          <div>
+                            <span className="font-semibold">Score:</span>{" "}
+                            {(candidate.values.scoreReasons?.length
+                              ? candidate.values.scoreReasons
+                              : [score.summary]
+                            ).join(" | ")}
+                          </div>
+                          <div>
+                            <span className="font-semibold">Brecha:</span>{" "}
+                            {(candidate.values.gapSignals?.length
+                              ? candidate.values.gapSignals
+                              : [
+                                  candidate.values.problemObservation ??
+                                    "Sin señales específicas",
+                                ]
+                            ).join(" | ")}
+                          </div>
+                          <div>
+                            <span className="font-semibold">Ángulo:</span>{" "}
+                            {candidate.values.salesAngle ??
+                              candidate.values.notes ??
+                              "Revisar manualmente antes de contactar."}
+                          </div>
+                          <div>
+                            <span className="font-semibold">
+                              Próxima acción:
+                            </span>{" "}
+                            {candidate.values.nextAction}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 align-top">
+                        <button
+                          type="button"
+                          disabled={candidate.dedupeReason !== null}
+                          onClick={() => handleAddCandidate(candidate.id)}
+                          className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                        >
+                          Guardar como lead
+                        </button>
+                      </td>
+                      <td className="px-2 py-2 align-top text-xs">
+                        {candidate.dedupeReason === "existing" ? (
+                          <span className="rounded bg-amber-100 px-2 py-1 text-amber-700">
+                            Duplicado existente
+                          </span>
+                        ) : candidate.dedupeReason === "batch" ? (
+                          <span className="rounded bg-orange-100 px-2 py-1 text-orange-700">
+                            Duplicado en lote
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-700">
+                            Nuevo
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
