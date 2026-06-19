@@ -350,3 +350,39 @@ Los providers agregados son:
 - `src/lib/prospecting/providers/osm-file-provider.ts`
 
 Ninguno hace scraping, crawling ni consultas remotas. Todos trabajan sobre archivos locales ya disponibles. Como Overture, Foursquare OS Places y OSM pueden traer campos incompletos, el motor debe aceptar rating, reseñas, teléfono, website y redes como opcionales, reduciendo confianza cuando falten señales críticas en lugar de descartar automáticamente todos los registros.
+
+## Fase 12 — agenda local programada
+
+La Fase 12 agrega una automatización local y programada para generar prospectos recurrentes por rubro/zona sin convertir Lead Radar en una herramienta de contacto automático.
+
+Comando principal:
+
+```bash
+npm run prospect:schedule
+```
+
+Configuración principal:
+
+```txt
+prospecting.config.json
+```
+
+Decisiones de implementación:
+
+- La agenda vive en `prospecting.config.json` para que Diego pueda editar jobs sin tocar código.
+- Cada job define `day`, `label`, `category`, zona (`city`/`country`), archivo local de entrada, formato, provider y límite.
+- La agenda incluida contempla lunes estética premium Montevideo, martes odontología Montevideo, miércoles inmobiliarias, jueves veterinarias y viernes barberías premium.
+- Por defecto se ejecutan únicamente los jobs del día local detectado por Node. Para revisión manual o demos se puede usar `npm run prospect:schedule -- --all` o `--day monday`.
+- Cada job exporta en un subdirectorio ordenado por fecha, día, rubro y zona dentro de `exports/prospecting-schedule/`.
+- Cada subdirectorio contiene JSON importable, CSV de revisión y `lead-radar-prospects.report.md` con encontrados, descartados, duplicados, prioridades A/B/C/D y rutas exportadas.
+- La implementación reutiliza el pipeline local existente (`leer → filtrar → normalizar → deduplicar → puntuar → exportar`) y no llama APIs pagas automáticamente.
+- La corrida no envía mensajes, no automatiza contacto y deja `doNotCallChecked: false` para mantener revisión humana y compliance antes de llamar.
+
+Ejemplos:
+
+```bash
+npm run prospect:schedule
+npm run prospect:schedule -- --day tuesday
+npm run prospect:schedule -- --all
+npm run prospect:schedule -- --config prospecting.config.json
+```

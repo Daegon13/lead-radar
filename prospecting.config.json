@@ -1,0 +1,72 @@
+{
+  "timezone": "America/Montevideo",
+  "outputDir": "exports/prospecting-schedule",
+  "runMode": "today",
+  "jobs": [
+    {
+      "id": "monday-premium-beauty-montevideo",
+      "enabled": true,
+      "day": "monday",
+      "label": "Estética premium Montevideo",
+      "category": "estetica",
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "samples/prospects-sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "limit": 50
+    },
+    {
+      "id": "tuesday-dentistry-montevideo",
+      "enabled": true,
+      "day": "tuesday",
+      "label": "Odontología Montevideo",
+      "category": "odontologia",
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "samples/prospects-sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "limit": 50
+    },
+    {
+      "id": "wednesday-real-estate",
+      "enabled": true,
+      "day": "wednesday",
+      "label": "Inmobiliarias",
+      "category": "inmobiliaria",
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "samples/prospects-sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "limit": 50
+    },
+    {
+      "id": "thursday-veterinary",
+      "enabled": true,
+      "day": "thursday",
+      "label": "Veterinarias",
+      "category": "veterinaria",
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "samples/prospects-sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "limit": 50
+    },
+    {
+      "id": "friday-premium-barbers",
+      "enabled": true,
+      "day": "friday",
+      "label": "Barberías premium",
+      "category": "barberia",
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "samples/prospects-sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "limit": 50
+    }
+  ]
+}
