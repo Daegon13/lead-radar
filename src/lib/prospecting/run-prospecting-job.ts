@@ -1,15 +1,13 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { dedupeProspects } from "./dedupe";
-import { loadFoursquareFileProspects } from "./providers/foursquare-file-provider";
-import { loadOsmFileProspects } from "./providers/osm-file-provider";
-import { loadOvertureFileProspects } from "./providers/overture-file-provider";
+import { getDataSourceProvider, type DataSourceInput } from "./sources";
 import { calculateProspectFitScore } from "./fit-score";
 import { normalizeProspects, type NormalizedProspectRecord } from "./normalize";
 import type { Lead, LeadFormValues, Priority } from "../../types/lead";
 
 export type Format = "csv" | "json";
-export type Provider = "generic" | "overture" | "foursquare" | "osm";
+export type Provider = "generic" | "csv-local" | "json-local" | "overture" | "overture-file" | "foursquare" | "foursquare-file" | "osm" | "osm-file" | "osm-overpass";
 type RawRecord = Record<string, unknown>;
 
 export type ProspectRunOptions = {
@@ -23,6 +21,7 @@ export type ProspectRunOptions = {
   minPriority?: Priority;
   out: string;
   outputName?: string;
+  sources?: DataSourceInput[];
 };
 
 const FIELD_ALIASES = {
@@ -56,62 +55,6 @@ function getValue(record: RawRecord, aliases: readonly string[]): unknown {
     if (value !== undefined && value !== null && String(value).trim() !== "") return value;
   }
   return undefined;
-}
-
-function splitCsvLine(line: string): string[] {
-  const values: string[] = [];
-  let current = "";
-  let quoted = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const next = line[index + 1];
-
-    if (char === '"') {
-      if (quoted && next === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        quoted = !quoted;
-      }
-      continue;
-    }
-
-    if (char === "," && !quoted) {
-      values.push(current.trim());
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  values.push(current.trim());
-  return values;
-}
-
-function parseCsv(raw: string): RawRecord[] {
-  const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  const [headerLine, ...rows] = lines;
-  if (!headerLine) return [];
-  const headers = splitCsvLine(headerLine);
-  return rows.map((line) => {
-    const values = splitCsvLine(line);
-    return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
-  });
-}
-
-function parseJson(raw: string): RawRecord[] {
-  const parsed: unknown = JSON.parse(raw);
-  const records = Array.isArray(parsed)
-    ? parsed
-    : typeof parsed === "object" && parsed !== null && Array.isArray((parsed as { records?: unknown }).records)
-      ? (parsed as { records: unknown[] }).records
-      : typeof parsed === "object" && parsed !== null && Array.isArray((parsed as { items?: unknown }).items)
-        ? (parsed as { items: unknown[] }).items
-        : [];
-
-  return records.filter((record): record is RawRecord => typeof record === "object" && record !== null && !Array.isArray(record));
 }
 
 function passesFilter(record: RawRecord, aliases: readonly string[], expected?: string): boolean {
@@ -205,19 +148,36 @@ export function leadsToReviewCsv(leads: Lead[]): string {
 }
 
 function providerLabel(provider: Provider): string {
-  if (provider === "overture") return "Overture Places local file";
-  if (provider === "foursquare") return "Foursquare OS Places local file";
-  if (provider === "osm") return "OpenStreetMap local file";
+  if (provider === "overture" || provider === "overture-file") return "Overture Places local file";
+  if (provider === "foursquare" || provider === "foursquare-file") return "Foursquare OS Places local file";
+  if (provider === "osm" || provider === "osm-file") return "OpenStreetMap local file";
+  if (provider === "osm-overpass") return "OpenStreetMap Overpass API";
   return "Archivo local";
 }
 
-async function loadProviderRecords(options: ProspectRunOptions): Promise<RawRecord[]> {
-  if (options.provider === "overture") return (await loadOvertureFileProspects(options)) as RawRecord[];
-  if (options.provider === "foursquare") return (await loadFoursquareFileProspects(options)) as RawRecord[];
-  if (options.provider === "osm") return (await loadOsmFileProspects(options)) as RawRecord[];
+function canonicalProviderId(provider: Provider, format: Format): string {
+  if (provider === "generic") return format === "csv" ? "csv-local" : "json-local";
+  if (provider === "overture") return "overture-file";
+  if (provider === "foursquare") return "foursquare-file";
+  if (provider === "osm") return "osm-file";
+  return provider;
+}
 
-  const raw = await readFile(options.input, "utf8");
-  return options.format === "csv" ? parseCsv(raw) : parseJson(raw);
+async function loadProviderRecords(options: ProspectRunOptions): Promise<RawRecord[]> {
+  const sourceInputs: DataSourceInput[] = options.sources?.length
+    ? options.sources
+    : [{ id: canonicalProviderId(options.provider, options.format), input: options.input, format: options.format, country: options.country, city: options.city, category: options.category, limit: options.limit }];
+
+  const results = await Promise.all(
+    sourceInputs.map(async (sourceInput) => {
+      const providerId = sourceInput.id ?? sourceInput.type ?? canonicalProviderId(options.provider, sourceInput.format ?? options.format);
+      const provider = getDataSourceProvider(providerId);
+      if (!provider) throw new Error(`Unknown data source provider: ${providerId}`);
+      return provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit });
+    }),
+  );
+
+  return results.flatMap((result) => result.rawProspects as RawRecord[]);
 }
 
 export type ProspectRunSummary = {

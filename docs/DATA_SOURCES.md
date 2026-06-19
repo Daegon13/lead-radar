@@ -289,3 +289,20 @@ Limitaciones esperadas de estas fuentes libres:
 - La presencia de cadenas/franquicias puede requerir revisión manual antes de asignar prioridad alta.
 
 Estas integraciones no reemplazan el juicio comercial: aumentan trazabilidad y volumen inicial, pero la prioridad sigue dependiendo de contactabilidad, brecha digital y explicación del score.
+
+## Fase 14 — Data Acquisition Layer multifuente
+
+Lead Radar separa la adquisición de datos del resto del pipeline. Las fuentes implementan una interfaz común (`DataSourceProvider`) y siempre devuelven `RawProspect[]`; ninguna fuente crea leads finales ni ejecuta scoring. El flujo formal queda: provider → normalize → dedupe → gap detection → scoring → sales angle → export/call queue.
+
+Fuentes disponibles en esta fase:
+
+- `csv-local`: archivo CSV manual/local.
+- `json-local`: archivo JSON manual/local.
+- `overture-file`: export local de Overture Places; también es el punto de integración previsto para consultas DuckDB que materialicen un archivo local.
+- `foursquare-file`: export local de Foursquare OS Places.
+- `osm-file`: export local de OpenStreetMap.
+- `osm-overpass`: provider opcional para consultas focalizadas a Overpass con `bbox`, timeout y límite conservador.
+
+Los resultados deben preservar trazabilidad con `source`, `sourceId`, `sourceUrl`, `sourceCheckedAt` y `confidence` cuando la fuente lo provea o el mapeo pueda inferirlo. Google Places queda documentado como integración futura/opcional y no es dependencia del MVP. AI Enricher queda fuera de fuentes primarias: podrá enriquecer prospectos ya adquiridos, sin reemplazar trazabilidad de origen.
+
+Overpass solo debe usarse con consultas acotadas por `bbox` o query explícita revisada manualmente, límite máximo conservador y timeout. No debe usarse para búsquedas masivas, scraping agresivo ni evasión de rate limits.
