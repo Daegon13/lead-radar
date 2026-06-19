@@ -151,21 +151,21 @@ type ProspectedLead = NormalizedProspect & {
 
 El export final debe poder mapear a `Lead` actual:
 
-| ProspectedLead | Lead actual |
-|---|---|
-| `name` | `businessName` |
-| `category` | `category` |
-| `city`/`neighborhood` | `location` |
-| `address` | `address` |
-| `rating` | `rating` |
-| `reviewCount` | `reviewCount` |
-| `website` | `websiteUrl` |
-| `instagram` | `instagram` |
-| `whatsapp` | `whatsapp` |
-| `phone` | `phone` |
-| `priority` | calculado por score |
-| `nextAction` | `nextAction` |
-| `salesAngle`/signals | `notes` o campos nuevos futuros |
+| ProspectedLead        | Lead actual                     |
+| --------------------- | ------------------------------- |
+| `name`                | `businessName`                  |
+| `category`            | `category`                      |
+| `city`/`neighborhood` | `location`                      |
+| `address`             | `address`                       |
+| `rating`              | `rating`                        |
+| `reviewCount`         | `reviewCount`                   |
+| `website`             | `websiteUrl`                    |
+| `instagram`           | `instagram`                     |
+| `whatsapp`            | `whatsapp`                      |
+| `phone`               | `phone`                         |
+| `priority`            | calculado por score             |
+| `nextAction`          | `nextAction`                    |
+| `salesAngle`/signals  | `notes` o campos nuevos futuros |
 
 ## Provider mock
 
@@ -311,3 +311,17 @@ La integración queda en dos puntos:
 - El CLI `npm run prospect:run` y los imports CSV/JSON que no traen pitch propio completan los campos comerciales usando el mismo scoring/generador.
 
 Esto mantiene compatibilidad: si un archivo importado ya trae `salesAngle`, `callOpening` u `objectionHint`, esos textos se preservan.
+
+## Fase 7: integración UI en `/prospecting`
+
+La pantalla `/prospecting` mantiene el provider mock para demo/testing y suma una vía local-first para revisar resultados reales: importación manual del JSON generado por `npm run prospect:run`.
+
+Decisión de arquitectura:
+
+- El frontend no intenta leer rutas del filesystem del runner, porque el navegador no tiene acceso directo a archivos locales arbitrarios.
+- El usuario carga manualmente `lead-radar-prospects.json` desde la UI.
+- El JSON esperado sigue siendo compatible con la salida actual del CLI: una lista de `Lead`/`LeadFormValues` enriquecidos con `priority`, `scoreReasons`, `gapSignals`, `salesAngle`, `callOpening`, `objectionHint` y `nextAction`.
+- La UI transforma esos registros en candidatos revisables antes de guardarlos como leads persistidos en `localStorage`.
+- La deduplicación reutiliza la clave actual basada en nombre y dirección/ubicación para evitar guardar leads ya existentes o repetidos dentro del lote importado.
+
+Esta fase no introduce scraping, APIs pagas ni lectura automática de directorios; solo conecta el motor local/importado con revisión humana en la pantalla de prospección.
