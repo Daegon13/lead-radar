@@ -253,3 +253,18 @@ osmOverpassProvider
 - Guardar `confidence`.
 - Guardar `sourceCheckedAt`.
 - Permitir revisión manual.
+
+### Estado Fase 3
+
+CSV/JSON manual ya cuenta con un runner local mínimo mediante `npm run prospect:run`. El flujo está pensado para archivos preparados o extractos lícitos de fuentes abiertas; no ejecuta scraping ni consume APIs reales.
+
+Campos aceptados inicialmente por alias:
+
+- Nombre: `businessName`, `name`, `business`, `nombre`.
+- Rubro: `category`, `rubro`, `type`, `amenity`.
+- País: `country`, `pais`, `addr:country`.
+- Ciudad: `city`, `location`, `localidad`, `addr:city`, `town`.
+- Contacto/presencia: `website`, `websiteUrl`, `instagram`, `whatsapp`, `phone`, `telefono`.
+- Trazabilidad: `id`, `sourceId`, `externalId`, `providerId`, `source`, `sourceUrl`.
+
+Los datos incompletos siguen siendo válidos, pero reducen la confianza y dejan la próxima acción como seguimiento o revisión manual cuando no hay contacto público.

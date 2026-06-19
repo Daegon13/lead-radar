@@ -1,0 +1,5 @@
+id,name,category,country,city,address,website,instagram,whatsapp,phone,rating,reviews,source,sourceUrl
+uy-001,Clínica Prado,clinica,UY,Montevideo,"Av. Agraciada 3100",,,59899111222,24001234,4.6,38,CSV manual,https://example.local/clinica-prado
+uy-002,Café Cordón,cafe,UY,Montevideo,"Chaná 2100",https://cafecordon.example,@cafecordon,,24009999,4.4,121,CSV manual,https://example.local/cafe-cordon
+uy-003,Hotel Colonia,hotel,UY,Colonia,"Centro histórico 55",,,59899222333,45220000,4.7,84,CSV manual,https://example.local/hotel-colonia
+ar-001,Tienda Palermo,tienda,AR,Buenos Aires,"Costa Rica 4500",,,5491112345678,,4.2,25,CSV manual,https://example.local/tienda-palermo
