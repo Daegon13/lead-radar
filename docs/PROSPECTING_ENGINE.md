@@ -266,3 +266,37 @@ Alcance pendiente para fases posteriores:
 - Reporte `.report.md` de corrida.
 - Scoring más fino como función pura reutilizable.
 - Providers específicos para Overture/Foursquare/OSM.
+
+## Fase 4: normalización y deduplicación implementadas
+
+La Fase 4 agrega dos módulos puros en `src/lib/prospecting/`:
+
+- `normalize.ts`: convierte registros crudos CSV/JSON o de providers en `NormalizedProspectRecord` con nombre, categoría, ubicación, contacto, website, redes, coordenadas y fuente en formato consistente.
+- `dedupe.ts`: compara prospectos normalizados y fusiona duplicados por identificadores fuertes o coincidencias suficientemente confiables.
+
+### Normalización aplicada
+
+- Nombres: trim, colapso de espacios, remoción de caracteres decorativos y generación de `normalizedName` sin acentos para matching.
+- Categorías: mapeo inicial a rubros comerciales (`Odontología`, `Estética premium`, `Inmobiliaria`, `Restaurante`, `Hotel/Alojamiento`) y fallback title case.
+- Ubicación: país, ciudad, barrio/localidad y dirección se conservan por separado cuando existen.
+- Teléfonos: se eliminan separadores visuales para producir formato consistente y una clave interna de dedupe.
+- Emails: se guardan en minúsculas solo si tienen forma válida.
+- Websites: se agrega protocolo si falta, se normaliza host sin `www`, se eliminan query/hash y trailing slash.
+- Redes: se separan Instagram, Facebook, LinkedIn, WhatsApp y otras URLs sociales.
+- Coordenadas: se aceptan `lat/lng`, `latitude/longitude` y `lon`; se parsean números con coma o punto decimal.
+- Fuente: cada prospecto conserva fuente, URL de fuente y fecha de chequeo.
+
+### Deduplicación aplicada
+
+Dos registros se consideran duplicados si cumplen alguno de estos criterios:
+
+1. Mismo teléfono normalizado.
+2. Mismo website normalizado.
+3. Mismo nombre normalizado y misma dirección normalizada.
+4. Coordenadas a menos de 75 metros y además coincidencia por nombre, dirección o identificador fuerte.
+
+Cuando dos registros se fusionan, se conserva el primer registro como base y se completan campos faltantes con el duplicado. Si dos fuentes coinciden, el campo `source` queda combinado para mantener trazabilidad.
+
+### Integración CLI
+
+`scripts/prospect.ts` ahora ejecuta el flujo `leer → filtrar → normalizar → deduplicar → limitar → exportar`. El resumen del CLI informa cuántos registros fueron leídos, filtrados, normalizados, deduplicados y exportados.

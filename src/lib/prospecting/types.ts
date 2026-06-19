@@ -28,12 +28,25 @@ export type RawProspect = {
   id?: string;
   name?: string;
   category?: string;
+  country?: string;
+  city?: string;
+  neighborhood?: string;
   vicinity?: string;
   address?: string;
   rating?: number | null;
   reviewCount?: number;
   website?: string;
   phone?: string;
+  email?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
+  whatsapp?: string;
+  socials?: string[];
+  lat?: number;
+  lng?: number;
+  source?: string;
+  sourceUrl?: string;
   sourcePayload?: unknown;
 };
 

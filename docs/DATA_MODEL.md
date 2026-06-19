@@ -197,3 +197,25 @@ Persistir historial de corridas y resultados.
 - Romper import/export por campos nuevos obligatorios.
 - Guardar datos sin fuente.
 - No distinguir confianza baja de lead malo.
+
+## Fase 4: NormalizedProspectRecord
+
+La normalización y deduplicación usan un formato intermedio puro llamado `NormalizedProspectRecord`. No reemplaza al tipo `Lead`; es una etapa previa para limpiar datos de fuentes heterogéneas y luego exportar leads compatibles con el modelo actual.
+
+Campos principales:
+
+| Campo | Uso |
+|---|---|
+| `name` / `normalizedName` | Nombre visible y clave de matching sin acentos ni puntuación. |
+| `category` | Rubro comercial normalizado. |
+| `country`, `city`, `neighborhood`, `address` | Ubicación separada por granularidad. |
+| `normalizedAddress` | Clave de matching de dirección con barrio/ciudad/país cuando están disponibles. |
+| `phone` / `normalizedPhone` | Teléfono visible y clave numérica para dedupe. |
+| `email` | Email válido en minúsculas. |
+| `website` / `websiteKey` | URL visible y clave host/path sin `www`, query ni hash. |
+| `socials` | Redes separadas (`instagram`, `facebook`, `linkedin`, `whatsapp`, `other`). |
+| `lat`, `lng` | Coordenadas numéricas opcionales para proximidad geográfica. |
+| `source`, `sourceId`, `sourceUrl`, `sourceCheckedAt` | Trazabilidad mínima obligatoria para prospección automática. |
+| `raw` | Registro original para auditoría o debugging. |
+
+Esta estructura permite soportar datos incompletos sin inflar prioridad: si faltan teléfono, website o coordenadas, el prospecto puede existir, pero la deduplicación y confianza quedan limitadas a las señales disponibles.
