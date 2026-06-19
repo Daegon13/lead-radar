@@ -400,3 +400,26 @@ La implementación está pensada para funcionamiento local con Node (`runtime = 
 Los jobs pueden declarar `sources` para ejecutar múltiples providers en una misma corrida. Cada entrada indica el provider (`id`), archivo local o parámetros de consulta, formato, filtros y límite. Si un job antiguo solo define `provider`, `input` y `format`, se mantiene compatibilidad convirtiéndolo internamente a una source única.
 
 El motor combina los `RawProspect[]` de todas las fuentes y recién después aplica normalización, deduplicación, detección de brecha digital, scoring, argumentos comerciales y exportación. Esta separación evita mezclar extracción con UI, cola de llamadas o scoring.
+
+## Fase 15 — AI Lead Researcher opcional
+
+El AI Lead Researcher es una capa server-only y opcional para enriquecer leads ya seleccionados. No recolecta leads, no reemplaza providers determinísticos y no automatiza contacto. Su uso previsto es manual o por lote limitado sobre leads prioridad A/B para mejorar el contexto comercial antes de una llamada humana.
+
+Configuración local en `.env.local`:
+
+```bash
+AI_RESEARCHER_ENABLED=false
+OPENAI_API_KEY=
+AI_RESEARCHER_PROVIDER=openai
+AI_RESEARCHER_MODEL=gpt-4.1-mini
+AI_RESEARCHER_MAX_BATCH_SIZE=5
+AI_RESEARCHER_TIMEOUT_MS=20000
+```
+
+Reglas operativas:
+
+- Si `AI_RESEARCHER_ENABLED` no está activo, la UI informa estado `disabled` y la app sigue funcionando.
+- Si está activo pero falta `OPENAI_API_KEY`, la UI informa `missing API key` sin exponer secretos al frontend.
+- La API key solo se lee en rutas server-side; el frontend recibe estado, proveedor, modelo y límites, nunca credenciales.
+- El lote automático está acotado por `AI_RESEARCHER_MAX_BATCH_SIZE` y solo toma leads A/B ordenados por score.
+- La respuesta de IA se guarda como metadatos auditables (`aiResearchedAt`, `aiProvider`, `aiModel`, `evidenceUrls`) y no modifica scoring ni datos primarios del lead.

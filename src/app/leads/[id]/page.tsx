@@ -48,5 +48,5 @@ export default function LeadDetailPage({ params }: LeadDetailPageProps) {
     );
   }
 
-  return <LeadDetail lead={lead} onQuickUpdate={handleQuickUpdate} />;
+  return <LeadDetail lead={lead} onQuickUpdate={handleQuickUpdate} onLeadEnriched={updateLead} />;
 }

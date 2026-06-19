@@ -52,6 +52,18 @@ export type LeadProspectingMetadata = {
   outcomeHistory?: LeadOutcomeEvent[];
   nextFollowUpAt?: string;
   dealValueEstimate?: number;
+  researchSummary?: string;
+  verifiedWebsite?: string;
+  verifiedSocials?: string[];
+  businessSignals?: string[];
+  riskFlags?: string[];
+  improvedSalesAngle?: string;
+  improvedCallOpening?: string;
+  citations?: string[];
+  evidenceUrls?: string[];
+  aiResearchedAt?: string;
+  aiProvider?: string;
+  aiModel?: string;
 };
 
 export type ScoreBreakdown = {
