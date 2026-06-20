@@ -112,3 +112,11 @@ Una feature está done cuando:
 - La importación reutiliza deduplicación local para no crear duplicados al repetir la acción.
 - Las fuentes distinguen `success`, `empty_result`, `timeout`, `request_failed`; corridas multifuente mixtas se muestran como `partial_success`.
 - La app sigue local-first y no agrega fuentes, scraping, Google Places ni ejecución arbitraria de comandos.
+
+## Fase 26 — Real Data Quality & Yield Calibration
+
+- Los source statuses distinguen `skipped_source`, `invalid_source`, `request_failed`, `timeout`, `empty_result`, `success` y `partial_success`.
+- Los data packs locales faltantes no rompen jobs multisource; los rotos son inválidos.
+- Cada corrida nueva escribe métricas de yield y conserva compatibilidad con summaries antiguos.
+- Review Ops permite revisar callable/non-callable e importar solo callable A/B.
+- `npm run prospect:yield` genera reportes JSON/CSV para decidir qué jobs repetir o ajustar.

@@ -2,10 +2,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { dedupeProspects } from "./dedupe";
 import { getDataSourceProvider, type DataSourceInput } from "./sources";
+import { validateDataPack } from "./data-pack-validator";
+import { isCallableLead } from "./callable-lead";
 import { capPriorityForContactability } from "../scoring";
 import { calculateProspectFitScore } from "./fit-score";
 import { normalizeProspects, type NormalizedProspectRecord } from "./normalize";
 import type { Lead, LeadFormValues, Priority } from "../../types/lead";
+import type { SourceStatus } from "./sources/types";
 
 export type Format = "csv" | "json";
 export type Provider = "generic" | "csv-local" | "json-local" | "overture" | "overture-file" | "foursquare" | "foursquare-file" | "osm" | "osm-file" | "osm-overpass";
@@ -166,7 +169,13 @@ export type AcquisitionSourceSummary = {
   warnings: string[];
   errors: string[];
   durationMs: number;
-  status: "request_failed" | "timeout" | "empty_result" | "success" | "partial_success";
+  status: SourceStatus;
+  leadsWithAnyContact?: number;
+  leadsWithoutWebsite?: number;
+  callableLeads?: number;
+  priorityA?: number;
+  priorityB?: number;
+  sourceYieldScore?: number;
 };
 
 export type AcquisitionRunSummary = {
@@ -191,6 +200,21 @@ export type AcquisitionRunSummary = {
   durationMs?: number;
   warnings?: string[];
   errors?: string[];
+  leadsWithPhone?: number;
+  leadsWithEmail?: number;
+  leadsWithWebsite?: number;
+  leadsWithoutWebsite?: number;
+  leadsWithSocials?: number;
+  leadsWithAnyContact?: number;
+  callableLeads?: number;
+  nonCallableLeads?: number;
+  contactabilityRate?: number;
+  digitalGapRate?: number;
+  callableRate?: number;
+  priorityABRate?: number;
+  sourceFailureRate?: number;
+  skippedSourcesCount?: number;
+  invalidSourcesCount?: number;
 };
 
 export type AcquisitionRun = {
@@ -222,6 +246,12 @@ async function loadProviderSource(sourceInput: DataSourceInput, options: Prospec
 
   try {
     if (!provider) throw new Error(`Unknown data source provider: ${providerId}`);
+    if (provider.capabilities.includes("local-file")) {
+      const validation = await validateDataPack({ ...sourceInput, format: sourceInput.format ?? options.format });
+      if (validation.status === "skipped_source" || validation.status === "invalid_source") {
+        return { records: [], normalized: [], summary: { sourceId: providerId, sourceLabel, recordsRead: 0, recordsAccepted: 0, recordsRejected: 0, warnings: validation.warnings, errors: validation.errors, durationMs: Date.now() - startedAt, status: validation.status } };
+      }
+    }
     const result = await provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit, forceRefresh: sourceInput.forceRefresh ?? options.forceRefresh });
     const records = result.rawProspects as RawRecord[];
     const filtered = records.filter(
@@ -280,11 +310,40 @@ export type ProspectRunSummary = AcquisitionRunSummary & {
   warnings: string[];
 };
 
+
+function rate(count: number, total: number): number { return total > 0 ? Number((count / total).toFixed(4)) : 0; }
+function hasAnyContact(lead: Lead): boolean { return Boolean(lead.phone || lead.whatsapp || lead.instagram || lead.websiteUrl); }
+function hasDigitalGap(lead: Lead): boolean { return lead.digitalPresenceQuality === "none" || lead.digitalPresenceQuality === "weak" || lead.demoRecommended === true || (lead.gapSignals ?? []).length > 0; }
+function computeYieldMetrics(leads: Lead[], sources: AcquisitionSourceSummary[]) {
+  const leadsWithPhone = leads.filter((lead) => Boolean(lead.phone)).length;
+  const leadsWithEmail = leads.filter((lead) => Boolean((lead as Lead & { email?: string }).email)).length;
+  const leadsWithWebsite = leads.filter((lead) => Boolean(lead.websiteUrl)).length;
+  const leadsWithoutWebsite = leads.length - leadsWithWebsite;
+  const leadsWithSocials = leads.filter((lead) => Boolean(lead.instagram)).length;
+  const leadsWithAnyContact = leads.filter(hasAnyContact).length;
+  const callableLeads = leads.filter(isCallableLead).length;
+  const priorityAB = leads.filter((lead) => lead.priority === "A" || lead.priority === "B").length;
+  const digitalGap = leads.filter(hasDigitalGap).length;
+  const failedSources = sources.filter((source) => ["request_failed", "timeout", "invalid_source"].includes(source.status)).length;
+  return { leadsWithPhone, leadsWithEmail, leadsWithWebsite, leadsWithoutWebsite, leadsWithSocials, leadsWithAnyContact, callableLeads, nonCallableLeads: leads.length - callableLeads, contactabilityRate: rate(leadsWithAnyContact, leads.length), digitalGapRate: rate(digitalGap, leads.length), callableRate: rate(callableLeads, leads.length), priorityABRate: rate(priorityAB, leads.length), sourceFailureRate: rate(failedSources, sources.length), skippedSourcesCount: sources.filter((s) => s.status === "skipped_source").length, invalidSourcesCount: sources.filter((s) => s.status === "invalid_source").length };
+}
+function enrichSourcesWithYield(sources: AcquisitionSourceSummary[], leads: Lead[]): AcquisitionSourceSummary[] {
+  return sources.map((source) => {
+    const sourceLeads = leads.filter((lead) => lead.source === source.sourceLabel || lead.source === source.sourceId || lead.source?.includes(source.sourceLabel));
+    const leadsWithAnyContact = sourceLeads.filter(hasAnyContact).length;
+    const callableLeads = sourceLeads.filter(isCallableLead).length;
+    const priorityA = sourceLeads.filter((lead) => lead.priority === "A").length;
+    const priorityB = sourceLeads.filter((lead) => lead.priority === "B").length;
+    const score = Math.round((rate(leadsWithAnyContact, Math.max(source.recordsAccepted, sourceLeads.length)) * 35) + (rate(priorityA + priorityB, Math.max(1, sourceLeads.length)) * 30) + (source.status === "success" ? 20 : source.status === "partial_success" ? 10 : 0) + (source.recordsAccepted > 0 ? 15 : 0));
+    return { ...source, leadsWithAnyContact, leadsWithoutWebsite: sourceLeads.filter((lead) => !lead.websiteUrl).length, callableLeads, priorityA, priorityB, sourceYieldScore: Math.max(0, Math.min(100, score)) };
+  });
+}
+
 export async function runProspecting(options: ProspectRunOptions): Promise<ProspectRunSummary> {
   const runStartedAt = new Date().toISOString();
   const startedMs = Date.now();
   const sourceResults = await loadProviderRecords(options);
-  const sources = sourceResults.map((result) => result.summary);
+  let sources = sourceResults.map((result) => result.summary);
   const errors = sources.flatMap((source) => source.errors.map((error) => `${source.sourceLabel}: ${error}`));
   const warnings = sources.flatMap((source) => source.warnings.map((warning) => `${source.sourceLabel}: ${warning}`));
 
@@ -310,6 +369,8 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
 
   const priorityCounts: Record<Priority, number> = { A: 0, B: 0, C: 0, D: 0 };
   for (const lead of leads) priorityCounts[lead.priority ?? "D"] += 1;
+  sources = enrichSourcesWithYield(sources, leads);
+  const yieldMetrics = computeYieldMetrics(leads, sources);
 
   const summary: AcquisitionRunSummary = {
     recordsRead,
@@ -333,6 +394,7 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
     durationMs: Date.now() - startedMs,
     warnings,
     errors,
+    ...yieldMetrics,
   };
 
   await writeFile(runSummaryPath, `${JSON.stringify({
@@ -356,6 +418,7 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
     exported: leads.length,
     discarded: summary.discarded,
     priorityCounts,
+    ...yieldMetrics,
     warnings,
     errors,
     jsonPath,

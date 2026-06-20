@@ -541,3 +541,7 @@ Cada corrida puede guardar `review-state.json` en su propia carpeta de export. E
 El motor puede ejecutar jobs reales allowlisted de OSM Overpass y jobs `multisource-real-local`. La entrada OSM exige `bbox`, tags explícitos, `limit <= 100` y `timeoutMs <= 25000`. Los jobs multifuente pasan por normalize → dedupe → scoring → sales angle → review, y escriben `run-summary.json` con source statuses, warnings y errores por fuente. Los archivos locales faltantes no deben bloquear toda la corrida: quedan auditados en el resumen para que Run History los muestre.
 
 La cache OSM vive en `exports/source-cache/osm-overpass/<cacheKey>/latest.json` con TTL por defecto de 24 horas; `--forceRefresh true` fuerza una llamada nueva.
+
+## Fase 26: calibración de yield
+
+El motor calcula métricas de yield por corrida y fuente: leads con teléfono/email/web/social, leads sin web, contacto disponible, callable leads, callable rate, contactability rate, digital gap rate, priority A/B rate, source failure rate, skipped/invalid sources y `sourceYieldScore`. La UI de Run History y Review Ops muestra estas métricas y permite filtrar/importar `callable A/B`.
