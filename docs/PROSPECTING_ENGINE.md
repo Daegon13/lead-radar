@@ -514,3 +514,24 @@ Guardrails obligatorios:
 3. No se contactan negocios ni se automatiza scraping.
 4. Toda sugerencia debe conservar evidencia URL para auditoría humana.
 5. `OPENAI_API_KEY` sólo se lee en rutas/módulos server-side y nunca se envía al frontend.
+
+## Fase 24 — Run History & Review Ops
+
+Las corridas generadas por `prospect:run` y `prospect:schedule` se convierten en una unidad operacional auditable. Cada job allowlisted escribe `run-summary.json` junto al JSON/CSV exportado; la UI lee esos summaries desde `/prospecting/runs` y permite abrir el detalle de una corrida sin ejecutar comandos ni leer paths arbitrarios.
+
+### Run History
+
+- El índice local se construye server-side recorriendo el directorio configurado de exports de prospección y buscando `run-summary.json` por job.
+- Cada entrada muestra `runId`, `jobId`, etiqueta del job, fechas, duración, status global, fuentes usadas, registros leídos/exportados/duplicados/descartados, conteo A/B/C/D y cantidad de warnings/errors.
+- Los statuses de fuente visibles son `success`, `empty_result`, `timeout` y `request_failed`.
+- Una corrida multifuente se marca como `partial_success` cuando al menos una fuente aporta resultados y otra falla por timeout o request failure.
+
+### Review Ops e importación por lote
+
+Desde el detalle de una corrida se muestran resumen global, resumen por fuente, warnings/errors, paths relativos seguros, leads exportados y distribución por prioridad. La revisión permite seleccionar leads individuales, seleccionar/importar solo A/B, importar seleccionados y descartar visualmente leads del lote antes de importarlos.
+
+La importación sigue siendo local-first: el browser escribe en el store local de leads y usa la clave de deduplicación existente por nombre + dirección/ubicación. Al repetir una importación, los leads ya existentes se muestran como `ya existente` o `importado` y se saltan para evitar duplicados accidentales.
+
+### Estado de revisión
+
+Cada corrida puede guardar `review-state.json` en su propia carpeta de export. Este archivo registra ids aprobados, descartados e importados, fecha de revisión y notas opcionales. No contiene secretos ni paths absolutos.
