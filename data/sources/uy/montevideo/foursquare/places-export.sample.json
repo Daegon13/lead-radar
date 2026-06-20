@@ -1,0 +1,66 @@
+{
+  "places": [
+    {
+      "fsq_place_id": "fsq-mvd-dental-pocitos-duplicate",
+      "name": "Clínica Dental Pocitos Demo",
+      "categories": [{ "id": 15014, "name": "Dentist" }],
+      "location": {
+        "address": "Bulevar España 2500",
+        "formatted_address": "Bulevar España 2500, Montevideo",
+        "locality": "Montevideo",
+        "region": "Pocitos",
+        "country": "UY"
+      },
+      "geocodes": { "main": { "latitude": -34.91011, "longitude": -56.15119 } },
+      "tel": "+598 2400 0000",
+      "website": "https://clinicadentalpocitos.example",
+      "confidence": 0.82
+    },
+    {
+      "fsq_place_id": "fsq-mvd-spa-web-1",
+      "name": "Punta Spa Boutique",
+      "categories": [{ "id": 11073, "name": "Spa" }],
+      "location": {
+        "address": "José Ellauri 740",
+        "formatted_address": "José Ellauri 740, Montevideo",
+        "locality": "Montevideo",
+        "region": "Punta Carretas",
+        "country": "UY"
+      },
+      "geocodes": { "main": { "latitude": -34.9194, "longitude": -56.1582 } },
+      "tel": "+598 2711 1111",
+      "website": "https://puntaspa.example",
+      "email": "reservas@puntaspa.example",
+      "confidence": 0.88
+    },
+    {
+      "fsq_place_id": "fsq-mvd-beauty-no-web-1",
+      "name": "Estética Brillo Pocitos",
+      "categories": [{ "id": 11071, "name": "Beauty Salon" }],
+      "location": {
+        "address": "Benito Blanco 930",
+        "formatted_address": "Benito Blanco 930, Montevideo",
+        "locality": "Montevideo",
+        "region": "Pocitos",
+        "country": "UY"
+      },
+      "geocodes": { "main": { "latitude": -34.9087, "longitude": -56.1488 } },
+      "tel": "+598 2700 2222",
+      "confidence": 0.73
+    },
+    {
+      "fsq_place_id": "fsq-mvd-dental-incomplete-1",
+      "name": "Consultorio Dental Cordón",
+      "categories": [{ "id": 15014, "name": "Dentist" }],
+      "location": {
+        "address": "Eduardo Acevedo 1450",
+        "formatted_address": "Eduardo Acevedo 1450, Montevideo",
+        "locality": "Montevideo",
+        "region": "Cordón",
+        "country": "UY"
+      },
+      "geocodes": { "main": { "latitude": -34.9038, "longitude": -56.1785 } },
+      "confidence": 0.61
+    }
+  ]
+}
