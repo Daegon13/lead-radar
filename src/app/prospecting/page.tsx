@@ -49,6 +49,7 @@ type AcquisitionSourceSummary = {
   warnings: string[];
   errors: string[];
   durationMs: number;
+  status?: "request_failed" | "timeout" | "empty_result" | "success";
 };
 
 type JobRunSummary = {
@@ -66,6 +67,7 @@ type JobRunSummary = {
   priorityCounts: Record<"A" | "B" | "C" | "D", number>;
   jsonPath: string;
   csvPath: string;
+  runSummaryPath?: string;
   sources?: AcquisitionSourceSummary[];
   errors?: string[];
   warnings?: string[];
@@ -113,6 +115,23 @@ type ProspectCandidate = {
   dedupeReason: "existing" | "batch" | null;
   origin: "mock" | "json";
 };
+
+function jobBadges(job: ProspectingJobDefinition): string[] {
+  const sourceIds = job.sources.map((source) => source.id ?? source.type ?? "");
+  const badges = new Set<string>();
+  if (job.sourceType.includes("demo") || job.id.includes("demo") || job.sources.some((source) => source.input?.startsWith("samples/"))) badges.add("DEMO");
+  if (job.sourceType.includes("local") || job.sources.some((source) => source.input?.startsWith("data/sources/"))) badges.add("LOCAL FILE");
+  if (sourceIds.includes("osm-overpass")) badges.add("OSM REAL");
+  if (sourceIds.includes("overture-file")) badges.add("OVERTURE LOCAL");
+  if (sourceIds.includes("foursquare-file")) badges.add("FOURSQUARE LOCAL");
+  if (job.sources.length > 1 || job.sourceType.includes("multisource")) badges.add("MULTISOURCE");
+  if (job.sourceType.includes("ai") || job.id.includes("ai")) badges.add("AI ASSISTED");
+  return Array.from(badges);
+}
+
+function isRealJob(job: ProspectingJobDefinition): boolean {
+  return jobBadges(job).some((badge) => ["OSM REAL", "OVERTURE LOCAL", "FOURSQUARE LOCAL", "MULTISOURCE"].includes(badge));
+}
 
 const MANUAL_STRATEGIC_POINT_ID = "manual";
 
@@ -750,11 +769,18 @@ export default function ProspectingPage() {
             const run = jobRuns[job.id] ?? { status: "idle" as const };
             const isRunning = run.status === "running";
             const isOsmOverpass = job.sourceType === "osm-overpass" || job.sources.some((source) => (source.id ?? source.type) === "osm-overpass");
+            const badges = jobBadges(job);
+            const realZeroResults = run.status === "success" && run.summary && isRealJob(job) && run.summary.exported === 0;
             return (
               <article key={job.id} className="rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
                     <h3 className="font-semibold">{job.label}</h3>
+                    <div className="flex flex-wrap gap-1">
+                      {badges.map((badge) => (
+                        <span key={badge} className="rounded-full border border-zinc-300 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">{badge}</span>
+                      ))}
+                    </div>
                     <p className="text-zinc-600 dark:text-zinc-400">{job.description}</p>
                     <p className="text-xs text-zinc-500">
                       {job.city ?? "Sin ciudad"}, {job.country ?? "sin país"} · Categorías: {job.categories.join(", ")} · Tipo: {job.sourceType} · Fuentes: {job.sources.map((source) => source.id ?? source.type ?? source.input ?? "local").join(", ")} · Límite: {job.limit} · Mín. prioridad: {job.minPriority}
@@ -781,12 +807,19 @@ export default function ProspectingPage() {
                     {run.summary.sourcesUsed?.length ? <p>Fuentes con datos: {run.summary.sourcesUsed.join(", ")}</p> : null}
                     <p className="break-all">JSON generado: {run.summary.jsonPath}</p>
                     <p className="break-all">CSV revisión: {run.summary.csvPath}</p>
+                    {run.summary.runSummaryPath ? <p className="break-all">Run summary auditable: {run.summary.runSummaryPath}</p> : null}
+                    {realZeroResults ? (
+                      <p className="mt-2 rounded-md border border-amber-300 bg-amber-100 px-2 py-1 text-amber-900 dark:border-amber-700 dark:bg-amber-900 dark:text-amber-50">
+                        Warning operacional: este job real exportó 0 leads. Revisá source summaries, warnings/errors y run-summary.json antes de asumir que no hay negocios.
+                      </p>
+                    ) : null}
                     {run.summary.sources?.length ? (
                       <div className="mt-2 overflow-x-auto rounded border border-emerald-200 bg-white/60 dark:border-emerald-800 dark:bg-emerald-950/50">
                         <table className="min-w-full text-left text-xs">
                           <thead>
                             <tr className="border-b border-emerald-200 dark:border-emerald-800">
                               <th className="px-2 py-1">Fuente</th>
+                              <th className="px-2 py-1">Status</th>
                               <th className="px-2 py-1">Leídos</th>
                               <th className="px-2 py-1">Aceptados</th>
                               <th className="px-2 py-1">Rechazados</th>
@@ -798,6 +831,7 @@ export default function ProspectingPage() {
                             {run.summary.sources.map((source) => (
                               <tr key={`${source.sourceId}-${source.sourceLabel}`} className="border-b border-emerald-100 last:border-0 dark:border-emerald-900">
                                 <td className="px-2 py-1">{source.sourceLabel} <span className="text-emerald-700 dark:text-emerald-300">({source.sourceId})</span></td>
+                                <td className="px-2 py-1">{source.status ?? "—"}</td>
                                 <td className="px-2 py-1">{source.recordsRead}</td>
                                 <td className="px-2 py-1">{source.recordsAccepted}</td>
                                 <td className="px-2 py-1">{source.recordsRejected}</td>

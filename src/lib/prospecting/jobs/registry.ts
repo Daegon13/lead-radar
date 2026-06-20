@@ -19,6 +19,7 @@ export type ProspectingJobDefinition = {
   format: Format;
   provider: Provider;
   enabled: boolean;
+  day?: string;
 };
 
 type ConfigJob = {
@@ -93,6 +94,7 @@ function normalizeJob(job: ConfigJob): ProspectingJobDefinition {
     format: job.format,
     provider,
     enabled: job.enabled !== false,
+    day: job.day,
   };
 }
 

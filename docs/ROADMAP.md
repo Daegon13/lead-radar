@@ -270,3 +270,21 @@ Crear una vista de trabajo para que Diego abra una pantalla y sepa a quién llam
 - Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
 - La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
 - Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.
+
+## Fase 23 — Operational Readiness
+
+Objetivo: convertir la prospección multifuente de demo avanzada a operación auditable y confiable, manteniendo revisión humana y evitando automatización de contacto.
+
+Alcance operativo:
+
+- Corridas CLI y programadas deben usar el registry allowlisted como fuente canónica de jobs.
+- Cada corrida debe exportar JSON/CSV y un `run-summary.json` con opciones, fuentes, métricas, warnings, errores parciales y duración.
+- Los providers reales o semi-reales deben reportar estado distinguible por fuente (`success`, `empty_result`, `timeout`, `request_failed`).
+- La UI `/prospecting` debe separar visualmente mocks/demo, archivos locales, OSM real, Overture/Foursquare locales, multifuente y asistencia IA.
+- Un resultado real con 0 leads no debe interpretarse automáticamente como “no hay negocios”: debe revisarse contra source summaries, warnings/errors y conectividad.
+
+Guardrails:
+
+- No scraping, no Google Places obligatorio y no automatización de contacto.
+- OSM Overpass sólo con `bbox` allowlisted, límite máximo 100 y timeout máximo 25s.
+- Las fuentes locales operativas sólo pueden apuntar a `samples/`, `data/sources/` o fixtures de validación.
