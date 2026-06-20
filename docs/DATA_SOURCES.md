@@ -364,3 +364,12 @@ uy-mvd-odo-001,Clínica Pública de Ejemplo,odontologia,UY,Montevideo,"Direcció
 `prospecting.config.json` mantiene los jobs demo basados en `samples/prospects-sample.csv` y agrega jobs locales para Montevideo con `sourceType: local-file`, `input`, `city`, `country`, `categories`, `minPriority` y `limit` declarados explícitamente. También puede incluir placeholders deshabilitados para archivos reales aún no creados.
 
 Si un archivo configurado no existe, el runner devuelve un error legible indicando el path faltante. La API de jobs captura el error y responde JSON sin crashear la app.
+
+
+## Fase 18 — Multisource Acquisition Engine
+
+- Un job de prospección puede declarar varias `sources` allowlisted y ejecutarlas en una única corrida de adquisición.
+- Cada corrida genera un `AcquisitionRun` con resumen global y `AcquisitionSourceSummary` por fuente: registros leídos, aceptados, rechazados, warnings, errores y duración.
+- Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
+- La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
+- Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.

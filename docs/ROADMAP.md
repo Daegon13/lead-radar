@@ -261,3 +261,12 @@ Crear una vista de trabajo para que Diego abra una pantalla y sepa a quién llam
 - Los leads sin teléfono, WhatsApp o Instagram no entran en la cola principal aunque tengan score alto.
 - Las acciones rápidas actualizan `status`, `nextAction`, `notes`, `lastContactedAt` y `updatedAt` sin crear un modelo paralelo.
 - La pantalla mantiene el enfoque local-first y no dispara llamadas ni mensajes automáticos.
+
+
+## Fase 18 — Multisource Acquisition Engine
+
+- Un job de prospección puede declarar varias `sources` allowlisted y ejecutarlas en una única corrida de adquisición.
+- Cada corrida genera un `AcquisitionRun` con resumen global y `AcquisitionSourceSummary` por fuente: registros leídos, aceptados, rechazados, warnings, errores y duración.
+- Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
+- La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
+- Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.

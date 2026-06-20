@@ -98,7 +98,7 @@ export function jobToRunOptions(job: ProspectingJobDefinition): ProspectRunOptio
     provider: job.provider,
     country: job.country,
     city: job.city,
-    category: job.categories[0],
+    category: job.categories.length === 1 ? job.categories[0] : undefined,
     limit: job.limit,
     minPriority: job.minPriority,
     out: `${((config.outputDir as string | undefined) ?? "exports/prospecting-jobs").replace(/\/$/, "")}/${job.id}`,

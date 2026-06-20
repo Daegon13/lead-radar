@@ -148,14 +148,6 @@ export function leadsToReviewCsv(leads: Lead[]): string {
   return [headers.join(","), ...leads.map((lead) => headers.map((header) => toCsvValue(lead[header as keyof Lead])).join(","))].join("\n");
 }
 
-function providerLabel(provider: Provider): string {
-  if (provider === "overture" || provider === "overture-file") return "Overture Places local file";
-  if (provider === "foursquare" || provider === "foursquare-file") return "Foursquare OS Places local file";
-  if (provider === "osm" || provider === "osm-file") return "OpenStreetMap local file";
-  if (provider === "osm-overpass") return "OpenStreetMap Overpass API";
-  return "Archivo local";
-}
-
 function canonicalProviderId(provider: Provider, format: Format): string {
   if (provider === "generic") return format === "csv" ? "csv-local" : "json-local";
   if (provider === "overture") return "overture-file";
@@ -164,48 +156,134 @@ function canonicalProviderId(provider: Provider, format: Format): string {
   return provider;
 }
 
-async function loadProviderRecords(options: ProspectRunOptions): Promise<RawRecord[]> {
-  const sourceInputs: DataSourceInput[] = options.sources?.length
-    ? options.sources
-    : [{ id: canonicalProviderId(options.provider, options.format), input: options.input, format: options.format, country: options.country, city: options.city, category: options.category, limit: options.limit }];
+export type AcquisitionSourceSummary = {
+  sourceId: string;
+  sourceLabel: string;
+  recordsRead: number;
+  recordsAccepted: number;
+  recordsRejected: number;
+  warnings: string[];
+  errors: string[];
+  durationMs: number;
+};
 
-  const results = await Promise.all(
-    sourceInputs.map(async (sourceInput) => {
-      const providerId = sourceInput.id ?? sourceInput.type ?? canonicalProviderId(options.provider, sourceInput.format ?? options.format);
-      const provider = getDataSourceProvider(providerId);
-      if (!provider) throw new Error(`Unknown data source provider: ${providerId}`);
-      return provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit });
-    }),
-  );
-
-  return results.flatMap((result) => result.rawProspects as RawRecord[]);
-}
-
-export type ProspectRunSummary = {
+export type AcquisitionRunSummary = {
   recordsRead: number;
   totalFound: number;
   filtered: number;
   normalized: number;
-  duplicateCount: number;
-  deduplicated: number;
+  totalRecordsRead: number;
+  totalNormalized: number;
+  totalDuplicates: number;
+  totalExported: number;
+  duplicates: number;
   exported: number;
   discarded: number;
+  sourcesUsed: string[];
   priorityCounts: Record<Priority, number>;
   jsonPath: string;
   csvPath: string;
+};
+
+export type AcquisitionRun = {
+  sources: AcquisitionSourceSummary[];
+  summary: AcquisitionRunSummary;
+};
+
+type LoadedSourceRecords = {
+  summary: AcquisitionSourceSummary;
+  records: RawRecord[];
+  normalized: NormalizedProspectRecord[];
+};
+
+function sourceInputProviderId(sourceInput: DataSourceInput, options: ProspectRunOptions): string {
+  return sourceInput.id ?? sourceInput.type ?? canonicalProviderId(options.provider, sourceInput.format ?? options.format);
+}
+
+function getSourceInputs(options: ProspectRunOptions): DataSourceInput[] {
+  return options.sources?.length
+    ? options.sources
+    : [{ id: canonicalProviderId(options.provider, options.format), input: options.input, format: options.format, country: options.country, city: options.city, category: options.category, limit: options.limit }];
+}
+
+async function loadProviderSource(sourceInput: DataSourceInput, options: ProspectRunOptions): Promise<LoadedSourceRecords> {
+  const startedAt = Date.now();
+  const providerId = sourceInputProviderId(sourceInput, options);
+  const provider = getDataSourceProvider(providerId);
+  const sourceLabel = provider?.label ?? providerId;
+
+  try {
+    if (!provider) throw new Error(`Unknown data source provider: ${providerId}`);
+    const result = await provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit });
+    const records = result.rawProspects as RawRecord[];
+    const filtered = records.filter(
+      (record) =>
+        passesFilter(record, FIELD_ALIASES.country, options.country) &&
+        passesFilter(record, FIELD_ALIASES.city, options.city) &&
+        passesFilter(record, FIELD_ALIASES.category, options.category),
+    );
+    const normalized = normalizeProspects(filtered, { defaultSource: result.sourceLabel, checkedAt: result.checkedAt });
+    return {
+      records,
+      normalized,
+      summary: {
+        sourceId: result.sourceId,
+        sourceLabel: result.sourceLabel,
+        recordsRead: records.length,
+        recordsAccepted: normalized.length,
+        recordsRejected: Math.max(0, records.length - normalized.length),
+        warnings: result.warnings ?? [],
+        errors: [],
+        durationMs: Date.now() - startedAt,
+      },
+    };
+  } catch (error) {
+    return {
+      records: [],
+      normalized: [],
+      summary: {
+        sourceId: providerId,
+        sourceLabel,
+        recordsRead: 0,
+        recordsAccepted: 0,
+        recordsRejected: 0,
+        warnings: [],
+        errors: [error instanceof Error ? error.message : "Unknown source error"],
+        durationMs: Date.now() - startedAt,
+      },
+    };
+  }
+}
+
+async function loadProviderRecords(options: ProspectRunOptions): Promise<LoadedSourceRecords[]> {
+  const sourceInputs = getSourceInputs(options);
+  return Promise.all(sourceInputs.map((sourceInput) => loadProviderSource(sourceInput, options)));
+}
+
+export type ProspectRunSummary = AcquisitionRunSummary & {
+  duplicateCount: number;
+  deduplicated: number;
+  acquisitionRun: AcquisitionRun;
+  sources: AcquisitionSourceSummary[];
   leads: Lead[];
   errors: string[];
+  warnings: string[];
 };
 
 export async function runProspecting(options: ProspectRunOptions): Promise<ProspectRunSummary> {
-  const records = await loadProviderRecords(options);
-  const filtered = records.filter(
-    (record) =>
-      passesFilter(record, FIELD_ALIASES.country, options.country) &&
-      passesFilter(record, FIELD_ALIASES.city, options.city) &&
-      passesFilter(record, FIELD_ALIASES.category, options.category),
-  );
-  const normalized = normalizeProspects(filtered, { defaultSource: providerLabel(options.provider) });
+  const sourceResults = await loadProviderRecords(options);
+  const sources = sourceResults.map((result) => result.summary);
+  const successfulSources = sourceResults.filter((result) => result.summary.errors.length === 0);
+  const errors = sources.flatMap((source) => source.errors.map((error) => `${source.sourceLabel}: ${error}`));
+  const warnings = sources.flatMap((source) => source.warnings.map((warning) => `${source.sourceLabel}: ${warning}`));
+
+  if (successfulSources.length === 0) {
+    throw new Error(errors.length ? `All acquisition sources failed: ${errors.join("; ")}` : "All acquisition sources failed.");
+  }
+
+  const recordsRead = sources.reduce((total, source) => total + source.recordsRead, 0);
+  const normalized = sourceResults.flatMap((result) => result.normalized);
+  const filtered = sources.reduce((total, source) => total + source.recordsAccepted, 0);
   const { prospects: cleanProspects, duplicateCount } = dedupeProspects(normalized);
   const limited = cleanProspects.slice(0, options.limit ?? cleanProspects.length);
   const priorityRank: Record<Priority, number> = { A: 4, B: 3, C: 2, D: 1 };
@@ -224,19 +302,32 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
   const priorityCounts: Record<Priority, number> = { A: 0, B: 0, C: 0, D: 0 };
   for (const lead of leads) priorityCounts[lead.priority ?? "D"] += 1;
 
-  return {
-    recordsRead: records.length,
-    totalFound: records.length,
-    filtered: filtered.length,
+  const summary: AcquisitionRunSummary = {
+    recordsRead,
+    totalFound: recordsRead,
+    filtered,
     normalized: normalized.length,
-    duplicateCount,
-    deduplicated: duplicateCount,
+    totalRecordsRead: recordsRead,
+    totalNormalized: normalized.length,
+    totalDuplicates: duplicateCount,
+    totalExported: leads.length,
+    duplicates: duplicateCount,
     exported: leads.length,
-    discarded: records.length - filtered.length + Math.max(0, normalized.length - cleanProspects.length),
+    discarded: recordsRead - filtered + Math.max(0, normalized.length - cleanProspects.length) + Math.max(0, limited.length - leads.length),
+    sourcesUsed: sources.filter((source) => source.recordsAccepted > 0).map((source) => source.sourceId),
     priorityCounts,
     jsonPath,
     csvPath,
+  };
+
+  return {
+    ...summary,
+    duplicateCount,
+    deduplicated: duplicateCount,
+    acquisitionRun: { sources, summary },
+    sources,
     leads,
-    errors: [],
+    errors,
+    warnings,
   };
 }
