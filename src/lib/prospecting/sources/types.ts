@@ -24,7 +24,7 @@ export type DataSourceInput = {
   timeoutMs?: number;
   userAgent?: string;
   bbox?: [number, number, number, number];
-  tags?: Record<string, string[]>;
+  tags?: Record<string, string[]> | Array<{ key: string; value: string }>;
   query?: string;
 };
 

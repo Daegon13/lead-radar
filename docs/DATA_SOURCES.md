@@ -373,3 +373,24 @@ Si un archivo configurado no existe, el runner devuelve un error legible indican
 - Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
 - La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
 - Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.
+
+## Fase 19 — OSM Overpass Real Jobs Uruguay
+
+Lead Radar incorpora jobs reales allowlisted contra OSM Overpass para Montevideo. La política de uso es focalizada y responsable:
+
+- Toda consulta configurada debe tener `bbox`; no se habilitan búsquedas nacionales ni consultas abiertas sin zona.
+- Los jobs combinan zona/ciudad/rubro con tags OSM explícitos y límites bajos o moderados (`limit <= 100`).
+- Los bbox de Uruguay viven en `src/lib/prospecting/geo/uruguay-zones.ts`; son aproximados, operativos y ajustables tras validación manual.
+- El mapeo ICP → tags OSM vive en `src/lib/prospecting/sources/osm-tags.ts`.
+- La UI no ejecuta todos los jobs automáticamente: cada job requiere acción explícita del usuario.
+- Overpass puede fallar, tardar o devolver cobertura incompleta. Los errores se reportan por fuente sin implementar scraping ni Google Places.
+
+Jobs iniciales:
+
+- `osm-mvd-odontologia-pocitos` — odontología en Pocitos/Punta Carretas.
+- `osm-mvd-estetica-punta-carretas` — estética/belleza en Pocitos/Punta Carretas.
+- `osm-mvd-veterinarias-cordon` — veterinarias en Cordón/Centro.
+- `osm-mvd-inmobiliarias-montevideo` — inmobiliarias en Montevideo general, con límite moderado.
+- `osm-mvd-barberias-premium-pocitos` — barberías/peluquerías en Pocitos/Punta Carretas.
+
+Estos datos entran al pipeline normal de normalización, deduplicación, scoring, export JSON/CSV y revisión manual. Como OSM no garantiza teléfono, web ni redes, la contactabilidad puede bajar la prioridad; un lead sin contacto público no debe quedar como prioridad A.

@@ -34,7 +34,7 @@ type ProspectingJobDefinition = {
   city?: string;
   categories: string[];
   sourceType: string;
-  sources: Array<{ id?: string; type?: string; input?: string; format?: string }>;
+  sources: Array<{ id?: string; type?: string; input?: string; format?: string; bbox?: number[]; tags?: unknown }>;
   limit: number;
   minPriority: string;
   outputName: string;
@@ -663,6 +663,7 @@ export default function ProspectingPage() {
           {jobs.map((job) => {
             const run = jobRuns[job.id] ?? { status: "idle" as const };
             const isRunning = run.status === "running";
+            const isOsmOverpass = job.sourceType === "osm-overpass" || job.sources.some((source) => (source.id ?? source.type) === "osm-overpass");
             return (
               <article key={job.id} className="rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -672,6 +673,11 @@ export default function ProspectingPage() {
                     <p className="text-xs text-zinc-500">
                       {job.city ?? "Sin ciudad"}, {job.country ?? "sin país"} · Categorías: {job.categories.join(", ")} · Tipo: {job.sourceType} · Fuentes: {job.sources.map((source) => source.id ?? source.type ?? source.input ?? "local").join(", ")} · Límite: {job.limit} · Mín. prioridad: {job.minPriority}
                     </p>
+                    {isOsmOverpass ? (
+                      <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                        Fuente real: OSM Overpass. Se ejecuta sólo con acción explícita, por bbox allowlisted y límite bajo/moderado; la cobertura comunitaria puede estar incompleta (teléfono/web/dirección/rubro).
+                      </p>
+                    ) : null}
                   </div>
                   <button
                     type="button"

@@ -358,6 +358,228 @@
           "limit": 50
         }
       ]
+    },
+    {
+      "id": "osm-mvd-odontologia-pocitos",
+      "enabled": true,
+      "day": "monday",
+      "label": "OSM odontología Pocitos / Punta Carretas",
+      "description": "Job real focalizado: odontología en bbox aproximado Pocitos/Punta Carretas vía OSM Overpass. Resultados comunitarios incompletos y revisión manual obligatoria.",
+      "sourceType": "osm-overpass",
+      "category": "odontologia",
+      "categories": [
+        "odontologia"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 30,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "odontologia",
+          "bbox": [
+            -34.928,
+            -56.166,
+            -34.895,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "amenity",
+              "value": "dentist"
+            },
+            {
+              "key": "healthcare",
+              "value": "dentist"
+            }
+          ],
+          "limit": 30,
+          "timeoutMs": 12000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-estetica-punta-carretas",
+      "enabled": true,
+      "day": "monday",
+      "label": "OSM estética Punta Carretas / Pocitos",
+      "description": "Job real focalizado: estética y belleza en bbox aproximado Punta Carretas/Pocitos vía OSM Overpass; no scraping ni Google Places.",
+      "sourceType": "osm-overpass",
+      "category": "estetica",
+      "categories": [
+        "estetica"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 30,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "estetica",
+          "bbox": [
+            -34.928,
+            -56.166,
+            -34.895,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "shop",
+              "value": "beauty"
+            },
+            {
+              "key": "amenity",
+              "value": "beauty_salon"
+            }
+          ],
+          "limit": 30,
+          "timeoutMs": 12000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-veterinarias-cordon",
+      "enabled": true,
+      "day": "tuesday",
+      "label": "OSM veterinarias Cordón / Centro",
+      "description": "Job real focalizado: veterinarias en bbox aproximado Cordón/Centro vía OSM Overpass con límite bajo.",
+      "sourceType": "osm-overpass",
+      "category": "veterinaria",
+      "categories": [
+        "veterinaria"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 25,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "veterinaria",
+          "bbox": [
+            -34.915,
+            -56.203,
+            -34.889,
+            -56.168
+          ],
+          "tags": [
+            {
+              "key": "amenity",
+              "value": "veterinary"
+            },
+            {
+              "key": "healthcare",
+              "value": "veterinary"
+            }
+          ],
+          "limit": 25,
+          "timeoutMs": 12000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-inmobiliarias-montevideo",
+      "enabled": true,
+      "day": "wednesday",
+      "label": "OSM inmobiliarias Montevideo",
+      "description": "Job real focalizado por rubro con bbox Montevideo general y límite moderado para inmobiliarias.",
+      "sourceType": "osm-overpass",
+      "category": "inmobiliaria",
+      "categories": [
+        "inmobiliaria"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "inmobiliaria",
+          "bbox": [
+            -34.936,
+            -56.286,
+            -34.748,
+            -56.029
+          ],
+          "tags": [
+            {
+              "key": "office",
+              "value": "estate_agent"
+            }
+          ],
+          "limit": 50,
+          "timeoutMs": 15000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-barberias-premium-pocitos",
+      "enabled": true,
+      "day": "friday",
+      "label": "OSM barberías premium Pocitos / Punta Carretas",
+      "description": "Job real focalizado: barberías/peluquerías en zona premium Pocitos/Punta Carretas con OSM Overpass.",
+      "sourceType": "osm-overpass",
+      "category": "barberia",
+      "categories": [
+        "barberia"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 35,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "barberia",
+          "bbox": [
+            -34.928,
+            -56.166,
+            -34.895,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "shop",
+              "value": "hairdresser"
+            }
+          ],
+          "limit": 35,
+          "timeoutMs": 12000
+        }
+      ]
     }
   ],
   "sources": {
@@ -369,6 +591,6 @@
       "osm-file",
       "osm-overpass"
     ],
-    "notes": "Phase 18 supports multisource acquisition runs across local/allowlisted providers with per-source summaries, partial-error handling, and global dedupe. Google Places, scraping, and automatic downloads remain out of scope."
+    "notes": "Phase 19 supports allowlisted OSM Overpass real jobs by bbox, city/zone and ICP tags with low/moderate limits, explicit UI execution, partial-error handling, and no scraping/Google Places/national searches."
   }
 }
