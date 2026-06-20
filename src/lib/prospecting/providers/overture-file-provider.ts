@@ -5,8 +5,8 @@ export const OVERTURE_FILE_PROVIDER_ID = "overture-file";
 export const OVERTURE_FILE_PROVIDER_LABEL = "Overture Places local file";
 
 function mapOvertureRecord(record: RawFileRecord, checkedAt: string): RawProspect {
-  const lat = parseNumber(readFirst(record, ["latitude", "lat", "geometry.latitude", "geometry.lat"]));
-  const lng = parseNumber(readFirst(record, ["longitude", "lng", "lon", "geometry.longitude", "geometry.lng", "geometry.lon"]));
+  const lat = parseNumber(readFirst(record, ["latitude", "lat", "coordinates.lat", "geometry.latitude", "geometry.lat"]));
+  const lng = parseNumber(readFirst(record, ["longitude", "lng", "lon", "coordinates.lng", "coordinates.lon", "geometry.longitude", "geometry.lng", "geometry.lon"]));
   const id = readFirst(record, ["id", "place_id", "source_id", "names.primary"]);
   const website = readFirst(record, ["websites", "website", "contact.website", "contact.websites"]);
   const websites = parseStringArray(website);

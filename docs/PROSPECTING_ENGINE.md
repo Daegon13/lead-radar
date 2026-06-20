@@ -474,3 +474,26 @@ El pipeline aplicado es el mismo en UI y CLI: lectura de archivo local, filtrado
 - Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
 - La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
 - Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.
+
+## Fase 20 — Overture DuckDB Exporter local-first
+
+La Fase 20 agrega un camino reproducible para preparar datasets Overture antes de correr el motor de prospección:
+
+```txt
+Overture GeoParquet → scripts/overture-export.ts → JSON/CSV local → provider overture-file → normalización/dedupe/scoring/export
+```
+
+Uso recomendado:
+
+```bash
+npx jiti scripts/overture-export.ts --country UY --city Montevideo --zone pocitos --bbox -34.928,-56.166,-34.895,-56.132 --category dentist --out data/sources/uy/montevideo/overture/dentists-pocitos.json --limit 50 --format json
+npm run prospect:run -- --jobId overture-mvd-odontologia-pocitos-local
+```
+
+Reglas operativas:
+
+- El exporter es CLI/local-first; la UI no descarga datasets ni ejecuta consultas arbitrarias.
+- Todo job Overture consume archivos locales con `provider: "overture-file"`.
+- Los errores de archivo faltante quedan en el resumen por fuente y usan el mensaje legible del provider local.
+- El bbox es obligatorio para evitar corridas nacionales o excesivamente amplias.
+- Los outputs de Overture son extractos auditables y deben revisarse manualmente antes de habilitar contacto comercial.
