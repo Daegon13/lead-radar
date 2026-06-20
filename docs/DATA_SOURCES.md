@@ -432,3 +432,9 @@ Jobs allowlisted:
 - `uy-mvd-osm-overture-foursquare-local-demo`: OSM + Overture + Foursquare local para validar adquisición multifuente y dedupe global.
 
 Regla de seguridad: no guardar tokens en el repo, no configurar tokens en `prospecting.config.json` y no exponer credenciales al frontend.
+
+## Fase 22: fuentes sugeridas por AI Source Scout
+
+AI Source Scout puede sugerir fuentes públicas para revisión manual usando OpenAI Responses API con web search, siempre como capa opcional y no como provider primario. Las sugerencias deben tratarse como hipótesis auditables: antes de crear un provider o importar datos, Diego debe revisar URL, términos de uso, cobertura, frecuencia de actualización, campos disponibles y dificultad de extracción.
+
+La salida aceptable contiene fuentes y evidencia, no leads finales. Si una respuesta no incluye `evidenceUrls`, se descarta. El sistema no ejecuta scraping ni extracción automática desde estas sugerencias.

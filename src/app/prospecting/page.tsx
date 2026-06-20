@@ -78,6 +78,25 @@ type JobRunState = {
   error?: string;
 };
 
+type AiSourceScoutSuggestion = {
+  sourceName: string;
+  sourceUrl: string;
+  sourceType: string;
+  expectedData: string[];
+  trustLevel: string;
+  extractionDifficulty: string;
+  notes: string;
+  evidenceUrls: string[];
+};
+
+type AiSourceScoutState = {
+  status: "idle" | "running" | "success" | "error";
+  sources: AiSourceScoutSuggestion[];
+  error?: string;
+  costWarning?: string;
+  guardrails?: string[];
+};
+
 type SearchFormState = {
   strategicPointId: string;
   lat: string;
@@ -190,6 +209,7 @@ export default function ProspectingPage() {
   const [jobs, setJobs] = useState<ProspectingJobDefinition[]>([]);
   const [jobListError, setJobListError] = useState<string | null>(null);
   const [jobRuns, setJobRuns] = useState<Record<string, JobRunState>>({});
+  const [sourceScout, setSourceScout] = useState<AiSourceScoutState>({ status: "idle", sources: [] });
 
   useEffect(() => {
     setHotspotRuns(loadHotspotRunRegistry());
@@ -466,6 +486,72 @@ export default function ProspectingPage() {
         },
       }));
     }
+  }
+
+  async function handleAiSourceScout() {
+    if (!form.rubro.trim()) {
+      setFeedback("Indicá un rubro antes de buscar fuentes públicas con IA.");
+      return;
+    }
+
+    const hotspot = form.strategicPointId !== MANUAL_STRATEGIC_POINT_ID
+      ? getProspectingHotspotById(form.strategicPointId)
+      : undefined;
+
+    setSourceScout({ status: "running", sources: [] });
+
+    try {
+      const response = await fetch("/api/ai-researcher/source-scout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          country: "Uruguay",
+          city: "Montevideo",
+          zone: hotspot?.label ?? "zona manual",
+          category: form.rubro,
+          maxSources: 5,
+        }),
+      });
+      const payload = (await response.json()) as {
+        result?: {
+          sources?: AiSourceScoutSuggestion[];
+          costWarning?: string;
+          guardrails?: string[];
+        };
+        error?: string;
+      };
+      if (!response.ok || !payload.result) {
+        throw new Error(payload.error ?? "No se pudo buscar fuentes públicas con IA.");
+      }
+
+      setSourceScout({
+        status: "success",
+        sources: payload.result.sources ?? [],
+        costWarning: payload.result.costWarning,
+        guardrails: payload.result.guardrails,
+      });
+      setFeedback("AI Source Scout devolvió fuentes sugeridas para revisión manual. No se extrajeron leads.");
+    } catch (error) {
+      setSourceScout({
+        status: "error",
+        sources: [],
+        error: error instanceof Error ? error.message : "No se pudo buscar fuentes públicas con IA.",
+      });
+    }
+  }
+
+  async function copySourceText(source: AiSourceScoutSuggestion) {
+    const text = [
+      `${source.sourceName}: ${source.sourceUrl}`,
+      `Tipo: ${source.sourceType}`,
+      `Datos esperados: ${source.expectedData.join(", ") || "sin detalle"}`,
+      `Confianza: ${source.trustLevel}`,
+      `Dificultad: ${source.extractionDifficulty}`,
+      `Notas: ${source.notes}`,
+      `Evidencia: ${source.evidenceUrls.join(", ")}`,
+    ].join("\n");
+    await navigator.clipboard.writeText(text);
+    setFeedback(`Se copiaron notas de ${source.sourceName}.`);
   }
 
   function importJobRunResults(jobId: string) {
@@ -841,6 +927,14 @@ export default function ProspectingPage() {
           >
             Corrida sugerida
           </button>
+          <button
+            type="button"
+            disabled={sourceScout.status === "running"}
+            onClick={handleAiSourceScout}
+            className="rounded-md border border-blue-300 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-950"
+          >
+            {sourceScout.status === "running" ? "Buscando fuentes…" : "Buscar fuentes públicas con IA"}
+          </button>
           <Link
             href="/leads"
             className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -849,6 +943,60 @@ export default function ProspectingPage() {
           </Link>
         </div>
       </form>
+
+      <section className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
+        <div className="space-y-1">
+          <h2 className="text-sm font-semibold text-blue-950 dark:text-blue-100">AI Source Scout opcional</h2>
+          <p className="text-sm text-blue-900 dark:text-blue-200">
+            Usa IA con web search para sugerir fuentes públicas auditables por rubro/zona. No genera leads, no extrae datos automáticamente y puede consumir costo de API.
+          </p>
+          {sourceScout.costWarning ? <p className="text-xs text-blue-800 dark:text-blue-300">{sourceScout.costWarning}</p> : null}
+          {sourceScout.guardrails?.length ? (
+            <ul className="list-disc pl-5 text-xs text-blue-800 dark:text-blue-300">
+              {sourceScout.guardrails.map((guardrail) => <li key={guardrail}>{guardrail}</li>)}
+            </ul>
+          ) : null}
+          {sourceScout.status === "error" ? (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+              {sourceScout.error}
+            </p>
+          ) : null}
+        </div>
+        {sourceScout.sources.length > 0 ? (
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            {sourceScout.sources.map((source) => (
+              <article key={`${source.sourceName}-${source.sourceUrl}`} className="rounded-md border border-blue-200 bg-white p-3 text-sm dark:border-blue-900 dark:bg-zinc-950">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold">{source.sourceName}</h3>
+                    <a className="break-all text-blue-700 hover:underline dark:text-blue-300" href={source.sourceUrl} target="_blank" rel="noreferrer">
+                      {source.sourceUrl}
+                    </a>
+                  </div>
+                  <button type="button" onClick={() => copySourceText(source)} className="rounded-md border border-blue-300 px-2 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:text-blue-200">
+                    Copiar URL/notas
+                  </button>
+                </div>
+                <dl className="mt-2 grid gap-1 text-xs text-zinc-700 dark:text-zinc-300">
+                  <div><dt className="inline font-semibold">Tipo:</dt> <dd className="inline">{source.sourceType}</dd></div>
+                  <div><dt className="inline font-semibold">Datos esperados:</dt> <dd className="inline">{source.expectedData.join(", ") || "Sin detalle"}</dd></div>
+                  <div><dt className="inline font-semibold">Confianza:</dt> <dd className="inline">{source.trustLevel}</dd></div>
+                  <div><dt className="inline font-semibold">Dificultad:</dt> <dd className="inline">{source.extractionDifficulty}</dd></div>
+                  <div><dt className="inline font-semibold">Notas:</dt> <dd className="inline">{source.notes}</dd></div>
+                </dl>
+                <div className="mt-2 text-xs">
+                  <span className="font-semibold">Evidencia: </span>
+                  {source.evidenceUrls.map((url, index) => (
+                    <a key={url} className="break-all text-blue-700 hover:underline dark:text-blue-300" href={url} target="_blank" rel="noreferrer">
+                      {index > 0 ? ", " : ""}{url}
+                    </a>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </section>
 
       <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

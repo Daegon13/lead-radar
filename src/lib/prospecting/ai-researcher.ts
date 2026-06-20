@@ -32,6 +32,8 @@ const DEFAULT_MAX_BATCH_SIZE = 5;
 const DEFAULT_TIMEOUT_MS = 20_000;
 const MAX_HARD_BATCH_SIZE = 20;
 const ENABLED_VALUES = new Set(["1", "true", "yes", "enabled"]);
+const WEB_SEARCH_TOOL = "web_search";
+const WEB_SEARCH_PREVIEW_TOOL = "web_search_preview";
 
 function numberFromEnv(value: string | undefined, fallback: number, max: number): number {
   if (!value) return fallback;
@@ -111,38 +113,81 @@ function parseResearchJson(value: unknown, config: AiResearcherConfig): AiLeadRe
   };
 }
 
+function extractOutputText(payload: unknown): string {
+  const record = typeof payload === "object" && payload !== null ? payload as Record<string, unknown> : {};
+  if (typeof record.output_text === "string") return record.output_text;
+
+  const output = Array.isArray(record.output) ? record.output : [];
+  for (const item of output) {
+    const itemRecord = typeof item === "object" && item !== null ? item as Record<string, unknown> : {};
+    const content = Array.isArray(itemRecord.content) ? itemRecord.content : [];
+    for (const contentItem of content) {
+      const contentRecord = typeof contentItem === "object" && contentItem !== null ? contentItem as Record<string, unknown> : {};
+      if (typeof contentRecord.text === "string") return contentRecord.text;
+    }
+  }
+
+  return JSON.stringify(payload);
+}
+
+export async function requestOpenAiResponseJson(options: {
+  config: AiResearcherConfig;
+  system: string;
+  user: string;
+}): Promise<unknown> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.config.timeoutMs);
+  const configuredTool = process.env.AI_RESEARCHER_WEB_SEARCH_TOOL?.trim() || WEB_SEARCH_TOOL;
+  const toolsToTry = configuredTool === WEB_SEARCH_PREVIEW_TOOL
+    ? [WEB_SEARCH_PREVIEW_TOOL]
+    : [configuredTool, WEB_SEARCH_PREVIEW_TOOL];
+
+  try {
+    let lastError: Error | null = null;
+    for (const toolType of toolsToTry) {
+      const response = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: options.config.model,
+          tools: [{ type: toolType }],
+          input: [
+            { role: "system", content: options.system },
+            { role: "user", content: options.user },
+          ],
+          text: { format: { type: "json_object" } },
+        }),
+      });
+
+      if (response.ok) {
+        return JSON.parse(extractOutputText(await response.json()));
+      }
+
+      lastError = new Error(`AI provider error ${response.status}`);
+      if (toolType === WEB_SEARCH_PREVIEW_TOOL || ![400, 404, 422].includes(response.status)) {
+        break;
+      }
+    }
+
+    throw lastError ?? new Error("AI provider error");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function researchLeadWithAi(lead: Lead): Promise<AiLeadResearchResult> {
   const config = getAiResearcherConfig();
   if (config.status !== "configured") throw new Error(`AI Researcher is ${config.status}.`);
   if (config.provider !== "openai") throw new Error(`Unsupported AI provider: ${config.provider}.`);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
-
-  try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: config.model,
-        tools: [{ type: "web_search_preview" }],
-        input: [
-          { role: "system", content: "You enrich one already-selected sales lead. Do not generate new leads, do not automate contact, and do not overwrite existing data. Return strict JSON only." },
-          { role: "user", content: `Research this existing lead for a human web-development sales call. Return JSON with optional fields: researchSummary, verifiedWebsite, verifiedSocials, businessSignals, riskFlags, improvedSalesAngle, improvedCallOpening, evidenceUrls. Keep it concise and cite public URLs when available. Lead: ${JSON.stringify(compactLeadForResearch(lead))}` },
-        ],
-        text: { format: { type: "json_object" } },
-      }),
-    });
-
-    if (!response.ok) throw new Error(`AI provider error ${response.status}`);
-    const payload = await response.json() as { output_text?: string };
-    const outputText = payload.output_text ?? JSON.stringify(payload);
-    return parseResearchJson(JSON.parse(outputText), config);
-  } finally {
-    clearTimeout(timeout);
-  }
+  const payload = await requestOpenAiResponseJson({
+    config,
+    system: "You enrich one already-selected A/B sales lead. Do not generate new leads, do not automate contact, and do not overwrite existing data. Return strict JSON only.",
+    user: `Research this existing lead for a human web-development sales call. Return JSON with optional fields: researchSummary, verifiedWebsite, verifiedSocials, businessSignals, riskFlags, improvedSalesAngle, improvedCallOpening, evidenceUrls. Keep it concise and cite public URLs when available. Do not invent evidence. Lead: ${JSON.stringify(compactLeadForResearch(lead))}`,
+  });
+  return parseResearchJson(payload, config);
 }
