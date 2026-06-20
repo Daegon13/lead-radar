@@ -10,6 +10,7 @@ export type ProspectingJobDefinition = {
   country?: string;
   city?: string;
   categories: string[];
+  sourceType: string;
   sources: DataSourceInput[];
   limit: number;
   minPriority: Priority;
@@ -26,6 +27,8 @@ type ConfigJob = {
   day?: string;
   label: string;
   category: string;
+  categories?: string[];
+  sourceType?: string;
   city?: string;
   country?: string;
   input: string;
@@ -63,7 +66,8 @@ function normalizeJob(job: ConfigJob): ProspectingJobDefinition {
       `Ejecuta prospección local allowlisted para ${job.category} en ${[job.city, job.country].filter(Boolean).join(", ") || "zona sin filtro"}.`,
     country: job.country,
     city: job.city,
-    categories: [job.category],
+    categories: job.categories?.length ? job.categories : [job.category],
+    sourceType: job.sourceType ?? (provider === "generic" ? "local-file" : provider),
     sources: job.sources?.length
       ? job.sources.map((source) => ({ ...source, id: source.id ?? source.provider ?? provider, input: source.input ?? job.input, format: source.format ?? job.format }))
       : [{ id: provider === "generic" ? (job.format === "csv" ? "csv-local" : "json-local") : provider, input: job.input, format: job.format }],

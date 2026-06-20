@@ -429,3 +429,39 @@ Reglas operativas:
 Antes de conectar fuentes reales grandes, el contrato entre providers, normalización, dedupe, scoring, import/export, UI, métricas y call queue queda validado con fixtures locales. Los fixtures en `tests/fixtures/` cubren CSV, JSON genérico, Overture-like, Foursquare-like y OSM-like con casos A/B, sin contacto, bajo margen, duplicado y presencia web fuerte.
 
 Los jobs registrados siguen siendo allowlisted: la API recibe únicamente `jobId`, resuelve una definición interna habilitada y ejecuta fuentes locales configuradas, sin aceptar comandos arbitrarios desde la UI. El resumen de corrida expone totales encontrados/leídos, deduplicados, descartados, conteo A/B/C/D, errores y paths exportados.
+
+## Fase 17 — Ejecutar datasets locales Uruguay
+
+### Desde la UI
+
+1. Preparar un CSV local bajo `data/sources/uy/<ciudad>/` usando los templates de `data/sources/uy/montevideo/`.
+2. Verificar que el job exista en `prospecting.config.json` y esté `enabled: true`.
+3. Abrir `/prospecting`.
+4. En **Jobs registrados**, ejecutar el job local, por ejemplo `uy-mvd-odontologia-local`.
+5. Revisar el resumen: leídos, filtrados, normalizados, duplicados, exportados y conteo A/B/C/D.
+6. Importar los resultados a la tabla de revisión y guardar manualmente solo los leads aprobados.
+
+La UI muestra errores legibles cuando el CSV/JSON no existe o no puede parsearse. No ejecuta comandos arbitrarios: solo envía `jobId` a la API allowlisted.
+
+### Desde CLI
+
+Ejecutar un archivo local directo:
+
+```bash
+npm run prospect:run -- --input data/sources/uy/montevideo/odontologia.sample.csv --format csv --provider generic --country UY --city Montevideo --category odontologia --limit 50 --out exports/uy-mvd-odontologia-local
+```
+
+Ejecutar la agenda configurada, manteniendo demos y locales habilitados:
+
+```bash
+npm run prospect:schedule -- --config prospecting.config.json --all
+```
+
+El pipeline aplicado es el mismo en UI y CLI: lectura de archivo local, filtrado por país/ciudad/rubro, normalización, deduplicación, scoring, generación de `scoreReasons`, `gapSignals`, `salesAngle`, `callOpening`, `objectionHint` y `nextAction`, y export JSON/CSV para revisión humana.
+
+### Fuera de alcance en Fase 17
+
+- No hay descarga automática de datasets.
+- No se implementa Google Places.
+- No se implementa scraping.
+- No se automatizan contactos.

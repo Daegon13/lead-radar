@@ -19,9 +19,15 @@
         {
           "id": "csv-local",
           "input": "samples/prospects-sample.csv",
-          "format": "csv"
+          "format": "csv",
+          "type": "csv-local"
         }
-      ]
+      ],
+      "sourceType": "demo-sample",
+      "categories": [
+        "estetica"
+      ],
+      "minPriority": "D"
     },
     {
       "id": "tuesday-dentistry-montevideo",
@@ -39,9 +45,15 @@
         {
           "id": "csv-local",
           "input": "samples/prospects-sample.csv",
-          "format": "csv"
+          "format": "csv",
+          "type": "csv-local"
         }
-      ]
+      ],
+      "sourceType": "demo-sample",
+      "categories": [
+        "odontologia"
+      ],
+      "minPriority": "D"
     },
     {
       "id": "wednesday-real-estate",
@@ -59,9 +71,15 @@
         {
           "id": "csv-local",
           "input": "samples/prospects-sample.csv",
-          "format": "csv"
+          "format": "csv",
+          "type": "csv-local"
         }
-      ]
+      ],
+      "sourceType": "demo-sample",
+      "categories": [
+        "inmobiliaria"
+      ],
+      "minPriority": "D"
     },
     {
       "id": "thursday-veterinary",
@@ -79,9 +97,15 @@
         {
           "id": "csv-local",
           "input": "samples/prospects-sample.csv",
-          "format": "csv"
+          "format": "csv",
+          "type": "csv-local"
         }
-      ]
+      ],
+      "sourceType": "demo-sample",
+      "categories": [
+        "veterinaria"
+      ],
+      "minPriority": "D"
     },
     {
       "id": "friday-premium-barbers",
@@ -99,7 +123,199 @@
         {
           "id": "csv-local",
           "input": "samples/prospects-sample.csv",
-          "format": "csv"
+          "format": "csv",
+          "type": "csv-local"
+        }
+      ],
+      "sourceType": "demo-sample",
+      "categories": [
+        "barberia"
+      ],
+      "minPriority": "D"
+    },
+    {
+      "id": "uy-mvd-estetica-premium-local",
+      "enabled": true,
+      "day": "monday",
+      "label": "Estética premium Montevideo local",
+      "description": "Job local-first para cargar CSV público y trazable de estética premium montevideo local sin scraping ni APIs pagas.",
+      "sourceType": "local-file",
+      "category": "estetica",
+      "categories": [
+        "estetica"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/estetica-premium.sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/estetica-premium.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "estetica",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "uy-mvd-odontologia-local",
+      "enabled": true,
+      "day": "monday",
+      "label": "Odontología Montevideo local",
+      "description": "Job local-first para cargar CSV público y trazable de odontología montevideo local sin scraping ni APIs pagas.",
+      "sourceType": "local-file",
+      "category": "odontologia",
+      "categories": [
+        "odontologia"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/odontologia.sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/odontologia.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "odontologia",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "uy-mvd-inmobiliarias-local",
+      "enabled": true,
+      "day": "monday",
+      "label": "Inmobiliarias Montevideo local",
+      "description": "Job local-first para cargar CSV público y trazable de inmobiliarias montevideo local sin scraping ni APIs pagas.",
+      "sourceType": "local-file",
+      "category": "inmobiliaria",
+      "categories": [
+        "inmobiliaria"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/inmobiliarias.sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/inmobiliarias.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "inmobiliaria",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "uy-mvd-veterinarias-local",
+      "enabled": true,
+      "day": "monday",
+      "label": "Veterinarias Montevideo local",
+      "description": "Job local-first para cargar CSV público y trazable de veterinarias montevideo local sin scraping ni APIs pagas.",
+      "sourceType": "local-file",
+      "category": "veterinaria",
+      "categories": [
+        "veterinaria"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/veterinarias.sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/veterinarias.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "veterinaria",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "uy-mvd-barberias-premium-local",
+      "enabled": true,
+      "day": "monday",
+      "label": "Barberías premium Montevideo local",
+      "description": "Job local-first para cargar CSV público y trazable de barberías premium montevideo local sin scraping ni APIs pagas.",
+      "sourceType": "local-file",
+      "category": "barberia",
+      "categories": [
+        "barberia"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/barberias-premium.sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/barberias-premium.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "barberia",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "uy-mvd-estetica-premium-real-local",
+      "enabled": false,
+      "day": "monday",
+      "label": "Estética premium Montevideo real local (placeholder)",
+      "description": "Placeholder deshabilitado: copiar un CSV real público a este path antes de habilitar. Debe fallar de forma legible si el archivo no existe.",
+      "sourceType": "local-file",
+      "category": "estetica",
+      "categories": [
+        "estetica"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/estetica-premium.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/estetica-premium.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "estetica",
+          "limit": 50
         }
       ]
     }
@@ -113,6 +329,6 @@
       "osm-file",
       "osm-overpass"
     ],
-    "notes": "Google Places and AI enrichment are documented future providers; API keys must stay server-side and are not required for Phase 14."
+    "notes": "Phase 17 supports local Uruguay CSV/JSON files under data/sources/<country>/<city>/ using public, traceable commercial data only. Google Places, scraping, and automatic downloads remain out of scope."
   }
 }

@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 import type { RawProspect } from "../types";
 
@@ -73,8 +74,20 @@ export function parseJson(raw: string): RawFileRecord[] {
 }
 
 export async function readLocalRecords(options: LocalFileProviderOptions): Promise<RawFileRecord[]> {
-  const raw = await readFile(options.input, "utf8");
-  return options.format === "csv" ? parseCsv(raw) : parseJson(raw);
+  try {
+    const raw = await readFile(options.input, "utf8");
+    return options.format === "csv" ? parseCsv(raw) : parseJson(raw);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`No se encontró el archivo local de prospección: ${path.normalize(options.input)}. Creá el CSV/JSON con datos comerciales públicos y trazables, o corregí input en prospecting.config.json.`);
+    }
+
+    if (error instanceof SyntaxError) {
+      throw new Error(`El archivo local de prospección no tiene JSON válido: ${path.normalize(options.input)}.`);
+    }
+
+    throw error;
+  }
 }
 
 export function readFirst(record: RawFileRecord, paths: string[]): unknown {

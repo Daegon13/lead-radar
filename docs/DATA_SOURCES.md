@@ -306,3 +306,61 @@ Fuentes disponibles en esta fase:
 Los resultados deben preservar trazabilidad con `source`, `sourceId`, `sourceUrl`, `sourceCheckedAt` y `confidence` cuando la fuente lo provea o el mapeo pueda inferirlo. Google Places queda documentado como integración futura/opcional y no es dependencia del MVP. AI Enricher queda fuera de fuentes primarias: podrá enriquecer prospectos ya adquiridos, sin reemplazar trazabilidad de origen.
 
 Overpass solo debe usarse con consultas acotadas por `bbox` o query explícita revisada manualmente, límite máximo conservador y timeout. No debe usarse para búsquedas masivas, scraping agresivo ni evasión de rate limits.
+
+## Fase 17 — Data Intake Real Uruguay mediante archivos locales
+
+Lead Radar puede recibir datasets reales locales sin descargas automáticas, scraping ni Google Places. La estructura recomendada es:
+
+```text
+data/sources/uy/
+  README.md
+  montevideo/
+    estetica-premium.sample.csv
+    odontologia.sample.csv
+    inmobiliarias.sample.csv
+    veterinarias.sample.csv
+    barberias-premium.sample.csv
+  mercedes/
+    .gitkeep
+```
+
+Los archivos `.sample.csv` son templates seguros. Para operar con datos reales, copiar un template a un archivo sin `.sample`, por ejemplo `data/sources/uy/montevideo/odontologia.csv`, completar únicamente datos comerciales públicos y trazables, y apuntar un job local a ese path.
+
+### Columnas esperadas para CSV local
+
+Columnas mínimas recomendadas:
+
+- `id`: identificador estable de la fuente o del archivo manual.
+- `name`: nombre comercial público.
+- `category`: rubro normalizado (`estetica`, `odontologia`, `inmobiliaria`, `veterinaria`, `barberia`, etc.).
+- `country`: código país, por ejemplo `UY`.
+- `city`: ciudad, por ejemplo `Montevideo`.
+- `address`: dirección comercial pública, si existe.
+- `website`: sitio web público, si existe.
+- `instagram`: usuario o URL pública, si existe.
+- `whatsapp`: WhatsApp comercial público, si existe.
+- `phone`: teléfono comercial público, si existe.
+- `rating` y `reviews`: métricas públicas opcionales si la fuente permite reutilizarlas.
+- `source`: nombre de la fuente o método manual.
+- `sourceUrl`: URL pública trazable de la fuente, si existe.
+
+Ejemplo:
+
+```csv
+id,name,category,country,city,address,website,instagram,whatsapp,phone,rating,reviews,source,sourceUrl
+uy-mvd-odo-001,Clínica Pública de Ejemplo,odontologia,UY,Montevideo,"Dirección comercial pública 123",,@clinicaejemplo,59899111222,24001234,4.5,25,Directorio público revisado,https://example.local/fuente
+```
+
+### Reglas de uso de datos
+
+- Usar solo datos comerciales públicos.
+- No incluir datos personales sensibles ni información privada.
+- Mantener `source` y `sourceUrl` para auditoría.
+- No automatizar contacto masivo a partir de estos archivos.
+- Si una fuente no trae teléfono, rating o reviews, dejar la celda vacía; el pipeline reduce la confianza y ajusta la prioridad.
+
+### Jobs locales Uruguay
+
+`prospecting.config.json` mantiene los jobs demo basados en `samples/prospects-sample.csv` y agrega jobs locales para Montevideo con `sourceType: local-file`, `input`, `city`, `country`, `categories`, `minPriority` y `limit` declarados explícitamente. También puede incluir placeholders deshabilitados para archivos reales aún no creados.
+
+Si un archivo configurado no existe, el runner devuelve un error legible indicando el path faltante. La API de jobs captura el error y responde JSON sin crashear la app.
