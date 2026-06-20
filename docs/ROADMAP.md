@@ -301,3 +301,10 @@ Estado: implementada.
 - Persistencia opcional de revisión por corrida mediante `review-state.json`.
 
 Siguiente foco recomendado: consolidar métricas de conversión post-importación y preparar adquisición real masiva por zonas/fuentes con límites de volumen, trazabilidad y revisión humana obligatoria antes de contacto.
+
+## Fase 25 — Real Data Harvesting V1
+
+- Se agregan jobs OSM Overpass reales por rubro/zona en Montevideo con bbox obligatorio, tags ICP, límites seguros y cache de 24h.
+- Se consolida `data/sources/uy/` para data packs Overture, Foursquare y CSV manual curado.
+- Se agregan jobs multifuente V1 que combinan OSM real con archivos locales opcionales y toleran faltantes como errores parciales.
+- Google Places y scraping quedan explícitamente fuera de alcance.

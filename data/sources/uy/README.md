@@ -1,34 +1,11 @@
-# Fuentes locales Uruguay
+# Uruguay real/local source packs
 
-Esta carpeta contiene templates para datasets locales de Uruguay usados por jobs de prospección local-first.
+Estructura operacional para Fase 25 — Real Data Harvesting V1.
 
-Reglas:
+- `montevideo/osm/`: notas o exports OSM locales; los jobs reales usan Overpass con bbox y cache.
+- `montevideo/overture/`: JSON/CSV exportado desde Overture Places mediante herramientas locales.
+- `montevideo/foursquare/`: JSON/CSV exportado o normalizado desde Foursquare OS Places.
+- `montevideo/manual/`: CSV curado manualmente como fallback trazable.
+- `mercedes/`: zona futura/experimental para Mercedes, Soriano.
 
-- Usar únicamente datos comerciales públicos, trazables y revisables manualmente.
-- No incluir datos personales sensibles, datos privados ni información obtenida evadiendo términos de uso.
-- Completar siempre `source` y, cuando exista, `sourceUrl` para auditar el origen.
-- La herramienta no descarga datos, no scrapea y no llama Google Places en esta fase.
-
-## Extractos Overture Places
-
-Los extractos Overture para Uruguay deben guardarse por ciudad/zona, por ejemplo:
-
-```txt
-data/sources/uy/montevideo/overture/
-```
-
-Generación reproducible:
-
-```bash
-npx jiti scripts/overture-export.ts \
-  --country UY \
-  --city Montevideo \
-  --zone pocitos \
-  --bbox -34.928,-56.166,-34.895,-56.132 \
-  --category dentist \
-  --out data/sources/uy/montevideo/overture/dentists-pocitos.json \
-  --limit 50 \
-  --format json
-```
-
-Si DuckDB CLI no está instalado, el comando genera un `.sql` junto al output solicitado y muestra cómo ejecutarlo manualmente. No habilitar jobs que apunten a archivos reales hasta haber creado y revisado el JSON/CSV local.
+Usar únicamente datos comerciales públicos y trazables. No colocar datos privados, no scrapear masivamente y no automatizar contacto. Cada registro debe conservar fuente, URL o identificador, fecha de chequeo y confianza cuando sea posible.

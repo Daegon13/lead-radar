@@ -2,7 +2,7 @@ export type OsmTag = { key: string; value: string };
 
 export const osmIcpTags = {
   odontologia: [{ key: "amenity", value: "dentist" }, { key: "healthcare", value: "dentist" }],
-  estetica: [{ key: "shop", value: "beauty" }, { key: "amenity", value: "beauty_salon" }],
+  estetica: [{ key: "shop", value: "beauty" }, { key: "shop", value: "cosmetics" }, { key: "leisure", value: "spa" }],
   veterinaria: [{ key: "amenity", value: "veterinary" }, { key: "healthcare", value: "veterinary" }],
   barberia: [{ key: "shop", value: "hairdresser" }],
   peluqueria: [{ key: "shop", value: "hairdresser" }],

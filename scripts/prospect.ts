@@ -14,7 +14,7 @@ export type { Format, ProspectRunOptions, ProspectRunSummary, Provider } from ".
 
 function usage(): never {
   console.error(`Uso: npm run prospect:run -- --jobId <job-registrado>
-  o: npm run prospect:run -- --input <archivo> --format csv|json --out <ruta> [--provider generic|csv-local|json-local|overture-file|foursquare-file|osm-file|osm-overpass] [--country UY] [--city Montevideo] [--category restaurant] [--limit 50]`);
+  o: npm run prospect:run -- --input <archivo> --format csv|json --out <ruta> [--provider generic|csv-local|json-local|overture-file|foursquare-file|osm-file|osm-overpass] [--country UY] [--city Montevideo] [--category restaurant] [--limit 50] [--forceRefresh true]`);
   process.exit(1);
 }
 
@@ -34,7 +34,7 @@ function parseArgs(argv: string[]): ProspectRunOptions {
   if (values.jobId) {
     const job = getProspectingJobById(values.jobId);
     if (!job) usage();
-    return jobToRunOptions(job);
+    return { ...jobToRunOptions(job), forceRefresh: values.forceRefresh === "true" };
   }
 
   if (!values.input || !values.format || !values.out) usage();
@@ -55,6 +55,7 @@ function parseArgs(argv: string[]): ProspectRunOptions {
     category: values.category,
     limit,
     out: values.out,
+    forceRefresh: values.forceRefresh === "true",
   };
 }
 

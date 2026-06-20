@@ -535,3 +535,9 @@ La importación sigue siendo local-first: el browser escribe en el store local d
 ### Estado de revisión
 
 Cada corrida puede guardar `review-state.json` en su propia carpeta de export. Este archivo registra ids aprobados, descartados e importados, fecha de revisión y notas opcionales. No contiene secretos ni paths absolutos.
+
+## Fase 25 — Real Data Harvesting V1
+
+El motor puede ejecutar jobs reales allowlisted de OSM Overpass y jobs `multisource-real-local`. La entrada OSM exige `bbox`, tags explícitos, `limit <= 100` y `timeoutMs <= 25000`. Los jobs multifuente pasan por normalize → dedupe → scoring → sales angle → review, y escriben `run-summary.json` con source statuses, warnings y errores por fuente. Los archivos locales faltantes no deben bloquear toda la corrida: quedan auditados en el resumen para que Run History los muestre.
+
+La cache OSM vive en `exports/source-cache/osm-overpass/<cacheKey>/latest.json` con TTL por defecto de 24 horas; `--forceRefresh true` fuerza una llamada nueva.
