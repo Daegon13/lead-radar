@@ -100,3 +100,15 @@ Una feature está done cuando:
 - Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
 - La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
 - Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.
+
+## Fase 24 — Run History & Review Ops
+
+- Existe historial navegable de corridas en `/prospecting/runs`.
+- `GET /api/prospecting/runs` lista solo corridas bajo el directorio local de exports configurado.
+- `GET /api/prospecting/runs/[runId]` abre una corrida por id seguro y devuelve `run-summary.json`, source summaries y leads exportados si existe el JSON.
+- La API no acepta paths arbitrarios ni expone paths absolutos en la respuesta.
+- El detalle muestra resumen global, resumen por fuente, warnings, errors, paths relativos seguros, top/leads exportados, distribución A/B/C/D y etiquetas de source type.
+- La revisión por lote permite seleccionar leads individuales, importar seleccionados, importar solo A/B y descartar visualmente leads.
+- La importación reutiliza deduplicación local para no crear duplicados al repetir la acción.
+- Las fuentes distinguen `success`, `empty_result`, `timeout`, `request_failed`; corridas multifuente mixtas se muestran como `partial_success`.
+- La app sigue local-first y no agrega fuentes, scraping, Google Places ni ejecución arbitraria de comandos.

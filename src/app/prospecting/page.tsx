@@ -753,6 +753,9 @@ export default function ProspectingPage() {
           Buscá con el mock, importá JSON generado por prospect:run, revisá
           candidatos y guardalos en el pipeline local.
         </p>
+        <Link href="/prospecting/runs" className="text-sm text-blue-700 hover:underline dark:text-blue-300">
+          Ver Run History & Review Ops →
+        </Link>
       </header>
 
 

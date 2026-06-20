@@ -288,3 +288,16 @@ Guardrails:
 - No scraping, no Google Places obligatorio y no automatización de contacto.
 - OSM Overpass sólo con `bbox` allowlisted, límite máximo 100 y timeout máximo 25s.
 - Las fuentes locales operativas sólo pueden apuntar a `samples/`, `data/sources/` o fixtures de validación.
+
+## Fase 24 — Run History & Review Ops
+
+Estado: implementada.
+
+- Historial navegable de corridas en `/prospecting/runs`.
+- API server-side para listar y abrir corridas por `runId` allowlisted por estructura local.
+- Detalle de corrida con source summaries, distribución A/B/C/D, warnings/errors y etiquetas de tipo de fuente.
+- Revisión por lote antes de importar leads al pipeline local.
+- Importación de seleccionados o solo A/B con deduplicación local.
+- Persistencia opcional de revisión por corrida mediante `review-state.json`.
+
+Siguiente foco recomendado: consolidar métricas de conversión post-importación y preparar adquisición real masiva por zonas/fuentes con límites de volumen, trazabilidad y revisión humana obligatoria antes de contacto.
