@@ -1,0 +1,20 @@
+[
+  {
+    "name": "EJEMPLO FICTICIO - Clínica Demo",
+    "category": "odontologia",
+    "address": "Ejemplo 1234",
+    "city": "Montevideo",
+    "country": "UY",
+    "phone": "+598 0000 0000",
+    "email": "publico@example.invalid",
+    "website": "https://example.invalid",
+    "socials": { "instagram": "https://instagram.com/ejemplo-ficticio" },
+    "latitude": -34.9,
+    "longitude": -56.15,
+    "source": "TEMPLATE - reemplazar por fuente pública real",
+    "sourceId": "template-example-1",
+    "sourceUrl": "https://example.invalid/source",
+    "sourceCheckedAt": "2026-06-20T00:00:00.000Z",
+    "confidence": 0.5
+  }
+]

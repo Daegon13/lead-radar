@@ -11,7 +11,7 @@ function requireFileInput(input: DataSourceInput): { input: string; format: "csv
 }
 
 function result(provider: DataSourceProvider, input: DataSourceInput, checkedAt: string, rawProspects: RawProspect[], warnings: string[] = []): DataSourceResult {
-  return { sourceId: provider.id, sourceLabel: provider.label, checkedAt, input, rawProspects, warnings };
+  return { sourceId: provider.id, sourceLabel: input.sourceLabel ?? provider.label, checkedAt, input, rawProspects, warnings };
 }
 
 function withGenericTrace(record: Record<string, unknown>, checkedAt: string, providerLabel: string): RawProspect {

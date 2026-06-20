@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "prospect:run": "jiti scripts/prospect.ts",
-    "prospect:schedule": "jiti scripts/prospect-schedule.ts"
+    "prospect:schedule": "jiti scripts/prospect-schedule.ts",
+    "prospect:real:osm": "npm run prospect:run -- --jobId osm-mvd-odontologia-pocitos",
+    "prospect:real:mvd": "npm run prospect:run -- --jobId mvd-odontologia-multisource-v1"
   },
   "dependencies": {
     "next": "16.2.4",

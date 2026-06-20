@@ -13,6 +13,7 @@ export type SourceCapability =
 export type DataSourceInput = {
   id?: string;
   type?: string;
+  sourceLabel?: string;
   input?: string;
   format?: LocalFileFormat;
   country?: string;
@@ -26,6 +27,9 @@ export type DataSourceInput = {
   bbox?: [number, number, number, number];
   tags?: Record<string, string[]> | Array<{ key: string; value: string }>;
   query?: string;
+  cacheKey?: string;
+  cacheTtlMs?: number;
+  forceRefresh?: boolean;
 };
 
 export type DataSourceResult = {
@@ -36,7 +40,7 @@ export type DataSourceResult = {
   rawProspects: RawProspect[];
   warnings: string[];
   errors?: string[];
-  status?: "request_failed" | "timeout" | "empty_result" | "success";
+  status?: "request_failed" | "timeout" | "empty_result" | "success" | "partial_success";
 };
 
 export type DataSourceProvider = {

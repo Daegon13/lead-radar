@@ -1,3 +1,5 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type { RawProspect } from "../types";
 import type { DataSourceInput, DataSourceProvider, DataSourceResult } from "./types";
 
@@ -7,6 +9,8 @@ const MAX_TIMEOUT_MS = 25_000;
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
 const DEFAULT_USER_AGENT = "LeadRadar/phase-19 OSM Overpass Uruguay jobs (local-first; manual review; contact: Diego)";
+const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const CACHE_ROOT = "exports/source-cache/osm-overpass";
 
 type OverpassElement = {
   id?: number;
@@ -18,6 +22,8 @@ type OverpassElement = {
 };
 
 type OsmTag = { key: string; value: string };
+type OverpassPayload = { elements?: OverpassElement[] };
+type CachedOverpassPayload = { fetchedAt: string; input: DataSourceInput; payload: OverpassPayload };
 
 function escapeOverpass(value: string): string {
   return value.replace(/["\\]/g, "\\$&");
@@ -50,6 +56,32 @@ function buildQuery(input: DataSourceInput): string {
   const timeoutSeconds = Math.ceil(Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS) / 1000);
   const selectors = tags.flatMap((tag) => [buildSelector(tag, bbox, "node"), buildSelector(tag, bbox, "way"), buildSelector(tag, bbox, "relation")]);
   return `[out:json][timeout:${timeoutSeconds}];(${selectors.join("")});out center ${limit};`;
+}
+
+function safeCacheKey(input: DataSourceInput): string {
+  const raw = input.cacheKey ?? [input.city, input.category, input.bbox?.join("_")].filter(Boolean).join("-");
+  return (raw || "osm-overpass").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "osm-overpass";
+}
+
+async function readCachedPayload(input: DataSourceInput, nowMs: number): Promise<CachedOverpassPayload | undefined> {
+  if (input.forceRefresh) return undefined;
+  const cacheTtlMs = input.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
+  if (cacheTtlMs <= 0) return undefined;
+  try {
+    const cachePath = path.join(CACHE_ROOT, safeCacheKey(input), "latest.json");
+    const cached = JSON.parse(await readFile(cachePath, "utf8")) as CachedOverpassPayload;
+    const fetchedAtMs = Date.parse(cached.fetchedAt);
+    if (Number.isNaN(fetchedAtMs) || nowMs - fetchedAtMs > cacheTtlMs) return undefined;
+    return cached;
+  } catch {
+    return undefined;
+  }
+}
+
+async function writeCachedPayload(input: DataSourceInput, payload: OverpassPayload, fetchedAt: string): Promise<void> {
+  const cacheDir = path.join(CACHE_ROOT, safeCacheKey(input));
+  await mkdir(cacheDir, { recursive: true });
+  await writeFile(path.join(cacheDir, "latest.json"), `${JSON.stringify({ fetchedAt, input, payload }, null, 2)}\n`, "utf8");
 }
 
 function elementToProspect(element: OverpassElement, checkedAt: string, input: DataSourceInput): RawProspect {
@@ -90,20 +122,27 @@ export const osmOverpassProvider: DataSourceProvider = {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(input.overpassUrl ?? DEFAULT_OVERPASS_URL, {
-        method: "POST",
-        headers: {
-          "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "user-agent": input.userAgent ?? DEFAULT_USER_AGENT,
-        },
-        body: new URLSearchParams({ data: buildQuery({ ...input, limit, timeoutMs }) }),
-        signal: controller.signal,
-      });
-      if (!response.ok) throw new Error(`Overpass request failed with ${response.status} ${response.statusText}`.trim());
-      const payload = (await response.json()) as { elements?: OverpassElement[] };
+      const cacheInput = { ...input, limit, timeoutMs };
+      const cached = await readCachedPayload(cacheInput, Date.now());
+      const payload = cached?.payload ?? await (async () => {
+        const response = await fetch(input.overpassUrl ?? DEFAULT_OVERPASS_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "user-agent": input.userAgent ?? DEFAULT_USER_AGENT,
+          },
+          body: new URLSearchParams({ data: buildQuery(cacheInput) }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`Overpass request failed with ${response.status} ${response.statusText}`.trim());
+        const freshPayload = (await response.json()) as OverpassPayload;
+        await writeCachedPayload(cacheInput, freshPayload, checkedAt);
+        return freshPayload;
+      })();
       const elements = Array.isArray(payload.elements) ? payload.elements.slice(0, limit) : [];
-      const warnings = elements.length === 0 ? ["empty_result: OSM Overpass no devolvió resultados para este bbox/rubro; puede ser cobertura incompleta o filtro demasiado estricto."] : ["success: OSM Overpass es fuente comunitaria: teléfono, web, rubro y dirección pueden estar incompletos."];
-      return { sourceId: this.id, sourceLabel: this.label, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt, input)), warnings, errors: [], status: elements.length === 0 ? "empty_result" : "success" };
+      const cacheWarning = cached ? `cache_hit: respuesta OSM reutilizada desde ${cached.fetchedAt}; usar forceRefresh para consultar Overpass otra vez.` : "cache_write: respuesta OSM guardada en exports/source-cache/osm-overpass.";
+      const warnings = elements.length === 0 ? ["empty_result: OSM Overpass no devolvió resultados para este bbox/rubro; puede ser cobertura incompleta o filtro demasiado estricto.", cacheWarning] : ["success: OSM Overpass es fuente comunitaria: teléfono, web, rubro y dirección pueden estar incompletos.", cacheWarning];
+      return { sourceId: this.id, sourceLabel: input.sourceLabel ?? `OSM REAL — ${this.label}`, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt, input)), warnings, errors: [], status: elements.length === 0 ? "empty_result" : "success" };
     } catch (error) {
       const isTimeout = error instanceof Error && error.name === "AbortError";
       const status = isTimeout ? "timeout" : "request_failed";
@@ -114,7 +153,7 @@ export const osmOverpassProvider: DataSourceProvider = {
           : "request_failed: Overpass request failed with unknown error.";
       return {
         sourceId: this.id,
-        sourceLabel: this.label,
+        sourceLabel: input.sourceLabel ?? `OSM REAL — ${this.label}`,
         checkedAt,
         input,
         rawProspects: [],

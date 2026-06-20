@@ -23,6 +23,7 @@ export type ProspectRunOptions = {
   out: string;
   outputName?: string;
   sources?: DataSourceInput[];
+  forceRefresh?: boolean;
 };
 
 const FIELD_ALIASES = {
@@ -165,7 +166,7 @@ export type AcquisitionSourceSummary = {
   warnings: string[];
   errors: string[];
   durationMs: number;
-  status: "request_failed" | "timeout" | "empty_result" | "success";
+  status: "request_failed" | "timeout" | "empty_result" | "success" | "partial_success";
 };
 
 export type AcquisitionRunSummary = {
@@ -221,7 +222,7 @@ async function loadProviderSource(sourceInput: DataSourceInput, options: Prospec
 
   try {
     if (!provider) throw new Error(`Unknown data source provider: ${providerId}`);
-    const result = await provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit });
+    const result = await provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit, forceRefresh: sourceInput.forceRefresh ?? options.forceRefresh });
     const records = result.rawProspects as RawRecord[];
     const filtered = records.filter(
       (record) =>
@@ -344,7 +345,8 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
       category: options.category,
       limit: options.limit,
       minPriority: options.minPriority,
-      outputName: options.outputName,
+        outputName: options.outputName,
+        forceRefresh: options.forceRefresh,
     },
     options,
     sources,

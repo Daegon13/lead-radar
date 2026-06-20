@@ -363,9 +363,9 @@
       "id": "osm-mvd-odontologia-pocitos",
       "enabled": true,
       "day": "monday",
-      "label": "OSM odontología Pocitos / Punta Carretas",
+      "label": "OSM REAL odontología Pocitos / Punta Carretas",
       "description": "Job real focalizado: odontología en bbox aproximado Pocitos/Punta Carretas vía OSM Overpass. Resultados comunitarios incompletos y revisión manual obligatoria.",
-      "sourceType": "osm-overpass",
+      "sourceType": "osm-overpass-real",
       "category": "odontologia",
       "categories": [
         "odontologia"
@@ -401,7 +401,9 @@
             }
           ],
           "limit": 30,
-          "timeoutMs": 12000
+          "timeoutMs": 12000,
+          "cacheKey": "osm-mvd-odontologia-pocitos",
+          "cacheTtlMs": 86400000
         }
       ]
     },
@@ -409,9 +411,9 @@
       "id": "osm-mvd-estetica-punta-carretas",
       "enabled": true,
       "day": "monday",
-      "label": "OSM estética Punta Carretas / Pocitos",
+      "label": "OSM REAL estética Punta Carretas / Pocitos",
       "description": "Job real focalizado: estética y belleza en bbox aproximado Punta Carretas/Pocitos vía OSM Overpass; no scraping ni Google Places.",
-      "sourceType": "osm-overpass",
+      "sourceType": "osm-overpass-real",
       "category": "estetica",
       "categories": [
         "estetica"
@@ -442,12 +444,18 @@
               "value": "beauty"
             },
             {
-              "key": "amenity",
-              "value": "beauty_salon"
+              "key": "shop",
+              "value": "cosmetics"
+            },
+            {
+              "key": "leisure",
+              "value": "spa"
             }
           ],
           "limit": 30,
-          "timeoutMs": 12000
+          "timeoutMs": 12000,
+          "cacheKey": "osm-mvd-estetica-punta-carretas",
+          "cacheTtlMs": 86400000
         }
       ]
     },
@@ -455,9 +463,9 @@
       "id": "osm-mvd-veterinarias-cordon",
       "enabled": true,
       "day": "tuesday",
-      "label": "OSM veterinarias Cordón / Centro",
+      "label": "OSM REAL veterinarias Cordón / Centro",
       "description": "Job real focalizado: veterinarias en bbox aproximado Cordón/Centro vía OSM Overpass con límite bajo.",
-      "sourceType": "osm-overpass",
+      "sourceType": "osm-overpass-real",
       "category": "veterinaria",
       "categories": [
         "veterinaria"
@@ -493,7 +501,9 @@
             }
           ],
           "limit": 25,
-          "timeoutMs": 12000
+          "timeoutMs": 12000,
+          "cacheKey": "osm-mvd-veterinarias-cordon",
+          "cacheTtlMs": 86400000
         }
       ]
     },
@@ -501,9 +511,9 @@
       "id": "osm-mvd-inmobiliarias-montevideo",
       "enabled": true,
       "day": "wednesday",
-      "label": "OSM inmobiliarias Montevideo",
+      "label": "OSM REAL inmobiliarias Montevideo",
       "description": "Job real focalizado por rubro con bbox Montevideo general y límite moderado para inmobiliarias.",
-      "sourceType": "osm-overpass",
+      "sourceType": "osm-overpass-real",
       "category": "inmobiliaria",
       "categories": [
         "inmobiliaria"
@@ -535,17 +545,19 @@
             }
           ],
           "limit": 50,
-          "timeoutMs": 15000
+          "timeoutMs": 15000,
+          "cacheKey": "osm-mvd-inmobiliarias-montevideo",
+          "cacheTtlMs": 86400000
         }
       ]
     },
     {
-      "id": "osm-mvd-barberias-premium-pocitos",
+      "id": "osm-mvd-barberias-pocitos",
       "enabled": true,
       "day": "friday",
-      "label": "OSM barberías premium Pocitos / Punta Carretas",
+      "label": "OSM REAL barberías premium Pocitos / Punta Carretas",
       "description": "Job real focalizado: barberías/peluquerías en zona premium Pocitos/Punta Carretas con OSM Overpass.",
-      "sourceType": "osm-overpass",
+      "sourceType": "osm-overpass-real",
       "category": "barberia",
       "categories": [
         "barberia"
@@ -577,7 +589,9 @@
             }
           ],
           "limit": 35,
-          "timeoutMs": 12000
+          "timeoutMs": 12000,
+          "cacheKey": "osm-mvd-barberias-premium-pocitos",
+          "cacheTtlMs": 86400000
         }
       ]
     },
@@ -688,6 +702,578 @@
           "type": "local-file",
           "input": "data/sources/uy/montevideo/foursquare/places.normalized.sample.json",
           "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-abogados-centro",
+      "enabled": true,
+      "day": "wednesday",
+      "label": "OSM REAL abogados Centro / Cordón",
+      "description": "OSM REAL allowlisted: OSM REAL abogados Centro / Cordón. Bbox aproximado obligatorio, límite seguro y revisión humana antes de importar.",
+      "sourceType": "osm-overpass-real",
+      "category": "abogados",
+      "categories": [
+        "abogados"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 30,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "osm-mvd-abogados-centro",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "abogados",
+          "bbox": [
+            -34.915,
+            -56.203,
+            -34.889,
+            -56.168
+          ],
+          "tags": [
+            {
+              "key": "office",
+              "value": "lawyer"
+            }
+          ],
+          "limit": 30,
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-contadores-centro",
+      "enabled": true,
+      "day": "wednesday",
+      "label": "OSM REAL contadores / gestorías Centro",
+      "description": "OSM REAL allowlisted: OSM REAL contadores / gestorías Centro. Bbox aproximado obligatorio, límite seguro y revisión humana antes de importar.",
+      "sourceType": "osm-overpass-real",
+      "category": "contadores",
+      "categories": [
+        "contadores"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 30,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "osm-mvd-contadores-centro",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "contadores",
+          "bbox": [
+            -34.915,
+            -56.203,
+            -34.889,
+            -56.168
+          ],
+          "tags": [
+            {
+              "key": "office",
+              "value": "accountant"
+            }
+          ],
+          "limit": 30,
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-fitness-boutique",
+      "enabled": true,
+      "day": "friday",
+      "label": "OSM REAL fitness boutique / yoga Montevideo costa",
+      "description": "OSM REAL allowlisted: OSM REAL fitness boutique / yoga Montevideo costa. Bbox aproximado obligatorio, límite seguro y revisión humana antes de importar.",
+      "sourceType": "osm-overpass-real",
+      "category": "fitness",
+      "categories": [
+        "fitness"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "D",
+      "limit": 40,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "osm-mvd-fitness-boutique",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "fitness",
+          "bbox": [
+            -34.928,
+            -56.176,
+            -34.879,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "leisure",
+              "value": "fitness_centre"
+            },
+            {
+              "key": "sport",
+              "value": "yoga"
+            }
+          ],
+          "limit": 40,
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        }
+      ]
+    },
+    {
+      "id": "osm-mvd-cafes-marca-pocitos",
+      "enabled": true,
+      "day": "friday",
+      "label": "OSM REAL experimental cafés/restaurantes con marca Pocitos",
+      "description": "OSM REAL allowlisted: OSM REAL experimental cafés/restaurantes con marca Pocitos. Bbox aproximado obligatorio, límite seguro y revisión humana antes de importar.",
+      "sourceType": "osm-overpass-real",
+      "category": "cafes",
+      "categories": [
+        "cafes"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "osm-overpass",
+      "minPriority": "C",
+      "limit": 25,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "osm-mvd-cafes-marca-pocitos",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "cafes",
+          "bbox": [
+            -34.928,
+            -56.166,
+            -34.895,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "amenity",
+              "value": "cafe"
+            },
+            {
+              "key": "amenity",
+              "value": "restaurant"
+            }
+          ],
+          "limit": 25,
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        }
+      ]
+    },
+    {
+      "id": "mvd-odontologia-multisource-v1",
+      "enabled": true,
+      "day": "saturday",
+      "label": "MULTISOURCE odontología Montevideo V1",
+      "description": "MULTISOURCE V1 real/local: MULTISOURCE odontología Montevideo V1. Combina OSM REAL con data packs locales opcionales; archivos faltantes quedan como request_failed/warning sin romper la corrida completa.",
+      "sourceType": "multisource-real-local",
+      "category": "odontologia",
+      "categories": [
+        "odontologia"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "mvd-odontologia-multisource-v1-osm",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "odontologia",
+          "bbox": [
+            -34.928,
+            -56.166,
+            -34.895,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "amenity",
+              "value": "dentist"
+            },
+            {
+              "key": "healthcare",
+              "value": "dentist"
+            }
+          ],
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        },
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/odontologia.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "odontologia"
+        },
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/odontologia.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "odontologia"
+        },
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/manual/odontologia.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "odontologia"
+        }
+      ]
+    },
+    {
+      "id": "mvd-estetica-multisource-v1",
+      "enabled": true,
+      "day": "saturday",
+      "label": "MULTISOURCE estética premium Montevideo V1",
+      "description": "MULTISOURCE V1 real/local: MULTISOURCE estética premium Montevideo V1. Combina OSM REAL con data packs locales opcionales; archivos faltantes quedan como request_failed/warning sin romper la corrida completa.",
+      "sourceType": "multisource-real-local",
+      "category": "estetica",
+      "categories": [
+        "estetica"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "mvd-estetica-multisource-v1-osm",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "estetica",
+          "bbox": [
+            -34.928,
+            -56.166,
+            -34.895,
+            -56.132
+          ],
+          "tags": [
+            {
+              "key": "shop",
+              "value": "beauty"
+            },
+            {
+              "key": "shop",
+              "value": "cosmetics"
+            },
+            {
+              "key": "leisure",
+              "value": "spa"
+            }
+          ],
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        },
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/estetica.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "estetica"
+        },
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/estetica.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "estetica"
+        },
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/manual/estetica.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "estetica"
+        }
+      ]
+    },
+    {
+      "id": "mvd-veterinarias-multisource-v1",
+      "enabled": true,
+      "day": "saturday",
+      "label": "MULTISOURCE veterinarias Montevideo V1",
+      "description": "MULTISOURCE V1 real/local: MULTISOURCE veterinarias Montevideo V1. Combina OSM REAL con data packs locales opcionales; archivos faltantes quedan como request_failed/warning sin romper la corrida completa.",
+      "sourceType": "multisource-real-local",
+      "category": "veterinaria",
+      "categories": [
+        "veterinaria"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "mvd-veterinarias-multisource-v1-osm",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "veterinaria",
+          "bbox": [
+            -34.915,
+            -56.203,
+            -34.889,
+            -56.168
+          ],
+          "tags": [
+            {
+              "key": "amenity",
+              "value": "veterinary"
+            },
+            {
+              "key": "healthcare",
+              "value": "veterinary"
+            }
+          ],
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        },
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/veterinarias.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "veterinaria"
+        },
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/veterinarias.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "veterinaria"
+        },
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/manual/veterinarias.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "veterinaria"
+        }
+      ]
+    },
+    {
+      "id": "mvd-inmobiliarias-multisource-v1",
+      "enabled": true,
+      "day": "saturday",
+      "label": "MULTISOURCE inmobiliarias Montevideo V1",
+      "description": "MULTISOURCE V1 real/local: MULTISOURCE inmobiliarias Montevideo V1. Combina OSM REAL con data packs locales opcionales; archivos faltantes quedan como request_failed/warning sin romper la corrida completa.",
+      "sourceType": "multisource-real-local",
+      "category": "inmobiliaria",
+      "categories": [
+        "inmobiliaria"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "mvd-inmobiliarias-multisource-v1-osm",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "inmobiliaria",
+          "bbox": [
+            -34.936,
+            -56.286,
+            -34.748,
+            -56.029
+          ],
+          "tags": [
+            {
+              "key": "office",
+              "value": "estate_agent"
+            }
+          ],
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        },
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/inmobiliarias.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "inmobiliaria"
+        },
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/inmobiliarias.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "inmobiliaria"
+        },
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/manual/inmobiliarias.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "inmobiliaria"
+        }
+      ]
+    },
+    {
+      "id": "mvd-abogados-contadores-multisource-v1",
+      "enabled": true,
+      "day": "saturday",
+      "label": "MULTISOURCE abogados y contadores Centro V1",
+      "description": "MULTISOURCE V1 real/local: MULTISOURCE abogados y contadores Centro V1. Combina OSM REAL con data packs locales opcionales; archivos faltantes quedan como request_failed/warning sin romper la corrida completa.",
+      "sourceType": "multisource-real-local",
+      "category": "servicios profesionales",
+      "categories": [
+        "abogados",
+        "contadores"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "osm-overpass",
+      "format": "json",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "osm-overpass",
+          "type": "osm-overpass",
+          "cacheKey": "mvd-abogados-contadores-multisource-v1-osm",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50,
+          "category": "servicios profesionales",
+          "bbox": [
+            -34.915,
+            -56.203,
+            -34.889,
+            -56.168
+          ],
+          "tags": [
+            {
+              "key": "office",
+              "value": "lawyer"
+            },
+            {
+              "key": "office",
+              "value": "accountant"
+            }
+          ],
+          "timeoutMs": 12000,
+          "cacheTtlMs": 86400000
+        },
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/abogados-contadores.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        },
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/abogados-contadores.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        },
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/manual/abogados-contadores.csv",
+          "format": "csv",
           "country": "UY",
           "city": "Montevideo",
           "limit": 50

@@ -438,3 +438,15 @@ Regla de seguridad: no guardar tokens en el repo, no configurar tokens en `prosp
 AI Source Scout puede sugerir fuentes públicas para revisión manual usando OpenAI Responses API con web search, siempre como capa opcional y no como provider primario. Las sugerencias deben tratarse como hipótesis auditables: antes de crear un provider o importar datos, Diego debe revisar URL, términos de uso, cobertura, frecuencia de actualización, campos disponibles y dificultad de extracción.
 
 La salida aceptable contiene fuentes y evidencia, no leads finales. Si una respuesta no incluye `evidenceUrls`, se descarta. El sistema no ejecuta scraping ni extracción automática desde estas sugerencias.
+
+## Fase 25 — Fuentes reales/locales Uruguay
+
+La estructura operacional vive en `data/sources/uy/`:
+
+- `montevideo/osm/`: notas/exports OSM; los jobs reales usan Overpass con bbox.
+- `montevideo/overture/`: data packs Overture locales (`odontologia.json`, `estetica.json`, etc.).
+- `montevideo/foursquare/`: data packs Foursquare locales.
+- `montevideo/manual/`: CSV manual curado con fuente, fecha y confianza.
+- `mercedes/`: carpeta experimental para Mercedes/Soriano.
+
+OSM Overpass es la única fuente remota activa de esta fase y debe usarse de forma conservadora. Google Places queda para una fase futura opcional. AI Source Scout solo sugiere fuentes públicas; no recolecta masivamente ni scrapea.

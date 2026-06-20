@@ -1,0 +1,2 @@
+name,category,address,city,country,phone,email,website,socials,latitude,longitude,source,sourceId,sourceUrl,sourceCheckedAt,confidence
+EJEMPLO FICTICIO - Clínica Demo,odontologia,Ejemplo 1234,Montevideo,UY,+598 0000 0000,publico@example.invalid,https://example.invalid,https://instagram.com/ejemplo-ficticio,-34.9,-56.15,TEMPLATE - reemplazar por fuente pública real,template-example-1,https://example.invalid/source,2026-06-20T00:00:00.000Z,0.5
