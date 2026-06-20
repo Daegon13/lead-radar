@@ -165,6 +165,7 @@ export type AcquisitionSourceSummary = {
   warnings: string[];
   errors: string[];
   durationMs: number;
+  status: "request_failed" | "timeout" | "empty_result" | "success";
 };
 
 export type AcquisitionRunSummary = {
@@ -183,6 +184,12 @@ export type AcquisitionRunSummary = {
   priorityCounts: Record<Priority, number>;
   jsonPath: string;
   csvPath: string;
+  runSummaryPath?: string;
+  runStartedAt?: string;
+  runFinishedAt?: string;
+  durationMs?: number;
+  warnings?: string[];
+  errors?: string[];
 };
 
 export type AcquisitionRun = {
@@ -233,8 +240,9 @@ async function loadProviderSource(sourceInput: DataSourceInput, options: Prospec
         recordsAccepted: normalized.length,
         recordsRejected: Math.max(0, records.length - normalized.length),
         warnings: result.warnings ?? [],
-        errors: [],
+        errors: result.errors ?? [],
         durationMs: Date.now() - startedAt,
+        status: result.status ?? (normalized.length === 0 ? "empty_result" : "success"),
       },
     };
   } catch (error) {
@@ -250,6 +258,7 @@ async function loadProviderSource(sourceInput: DataSourceInput, options: Prospec
         warnings: [],
         errors: [error instanceof Error ? error.message : "Unknown source error"],
         durationMs: Date.now() - startedAt,
+        status: "request_failed",
       },
     };
   }
@@ -271,15 +280,13 @@ export type ProspectRunSummary = AcquisitionRunSummary & {
 };
 
 export async function runProspecting(options: ProspectRunOptions): Promise<ProspectRunSummary> {
+  const runStartedAt = new Date().toISOString();
+  const startedMs = Date.now();
   const sourceResults = await loadProviderRecords(options);
   const sources = sourceResults.map((result) => result.summary);
-  const successfulSources = sourceResults.filter((result) => result.summary.errors.length === 0);
   const errors = sources.flatMap((source) => source.errors.map((error) => `${source.sourceLabel}: ${error}`));
   const warnings = sources.flatMap((source) => source.warnings.map((warning) => `${source.sourceLabel}: ${warning}`));
 
-  if (successfulSources.length === 0) {
-    throw new Error(errors.length ? `All acquisition sources failed: ${errors.join("; ")}` : "All acquisition sources failed.");
-  }
 
   const recordsRead = sources.reduce((total, source) => total + source.recordsRead, 0);
   const normalized = sourceResults.flatMap((result) => result.normalized);
@@ -296,6 +303,7 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
   const outputName = options.outputName ?? "lead-radar-prospects";
   const jsonPath = path.join(options.out, `${outputName}.json`);
   const csvPath = path.join(options.out, `${outputName}.csv`);
+  const runSummaryPath = path.join(options.out, "run-summary.json");
   await writeFile(jsonPath, `${JSON.stringify(leads, null, 2)}\n`, "utf8");
   await writeFile(csvPath, `${leadsToReviewCsv(leads)}\n`, "utf8");
 
@@ -318,7 +326,42 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
     priorityCounts,
     jsonPath,
     csvPath,
+    runSummaryPath,
+    runStartedAt,
+    runFinishedAt: new Date().toISOString(),
+    durationMs: Date.now() - startedMs,
+    warnings,
+    errors,
   };
+
+  await writeFile(runSummaryPath, `${JSON.stringify({
+    job: {
+      input: options.input,
+      format: options.format,
+      provider: options.provider,
+      country: options.country,
+      city: options.city,
+      category: options.category,
+      limit: options.limit,
+      minPriority: options.minPriority,
+      outputName: options.outputName,
+    },
+    options,
+    sources,
+    recordsRead,
+    normalized: normalized.length,
+    duplicates: duplicateCount,
+    exported: leads.length,
+    discarded: summary.discarded,
+    priorityCounts,
+    warnings,
+    errors,
+    jsonPath,
+    csvPath,
+    runStartedAt: summary.runStartedAt,
+    runFinishedAt: summary.runFinishedAt,
+    durationMs: summary.durationMs,
+  }, null, 2)}\n`, "utf8");
 
   return {
     ...summary,

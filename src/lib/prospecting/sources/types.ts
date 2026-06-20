@@ -35,6 +35,8 @@ export type DataSourceResult = {
   input: DataSourceInput;
   rawProspects: RawProspect[];
   warnings: string[];
+  errors?: string[];
+  status?: "request_failed" | "timeout" | "empty_result" | "success";
 };
 
 export type DataSourceProvider = {

@@ -39,6 +39,7 @@ function buildSelector(tag: OsmTag, bbox: string, elementType: "node" | "way" | 
 }
 
 function buildQuery(input: DataSourceInput): string {
+  if (input.query && !input.bbox) throw new Error("OSM Overpass provider requires a bbox even when a custom query is provided.");
   if (input.query) return input.query;
   if (!input.bbox) throw new Error("OSM Overpass provider requires a bbox to avoid broad searches.");
   const [south, west, north, east] = input.bbox;
@@ -101,14 +102,16 @@ export const osmOverpassProvider: DataSourceProvider = {
       if (!response.ok) throw new Error(`Overpass request failed with ${response.status} ${response.statusText}`.trim());
       const payload = (await response.json()) as { elements?: OverpassElement[] };
       const elements = Array.isArray(payload.elements) ? payload.elements.slice(0, limit) : [];
-      const warnings = elements.length === 0 ? ["OSM Overpass no devolvió resultados para este bbox/rubro; puede ser cobertura incompleta o filtro demasiado estricto."] : ["OSM Overpass es fuente comunitaria: teléfono, web, rubro y dirección pueden estar incompletos."];
-      return { sourceId: this.id, sourceLabel: this.label, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt, input)), warnings };
+      const warnings = elements.length === 0 ? ["empty_result: OSM Overpass no devolvió resultados para este bbox/rubro; puede ser cobertura incompleta o filtro demasiado estricto."] : ["success: OSM Overpass es fuente comunitaria: teléfono, web, rubro y dirección pueden estar incompletos."];
+      return { sourceId: this.id, sourceLabel: this.label, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt, input)), warnings, errors: [], status: elements.length === 0 ? "empty_result" : "success" };
     } catch (error) {
-      const message = error instanceof Error && error.name === "AbortError"
-        ? `Overpass request timed out after ${timeoutMs}ms.`
+      const isTimeout = error instanceof Error && error.name === "AbortError";
+      const status = isTimeout ? "timeout" : "request_failed";
+      const message = isTimeout
+        ? `timeout: Overpass request timed out after ${timeoutMs}ms.`
         : error instanceof Error
-          ? `Overpass request failed: ${error.message}`
-          : "Overpass request failed with unknown error.";
+          ? `request_failed: Overpass request failed: ${error.message}`
+          : "request_failed: Overpass request failed with unknown error.";
       return {
         sourceId: this.id,
         sourceLabel: this.label,
@@ -116,6 +119,8 @@ export const osmOverpassProvider: DataSourceProvider = {
         input,
         rawProspects: [],
         warnings: [`${message} No se detuvo la corrida; revisar conectividad, estado de Overpass o bajar el límite antes de reintentar.`],
+        errors: [`${message} Revisar conectividad, estado de Overpass o bajar el límite antes de reintentar.`],
+        status,
       };
     } finally {
       clearTimeout(timeout);
