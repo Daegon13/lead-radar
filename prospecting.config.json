@@ -580,6 +580,38 @@
           "timeoutMs": 12000
         }
       ]
+    },
+    {
+      "id": "overture-mvd-odontologia-pocitos-local",
+      "enabled": true,
+      "day": "monday",
+      "label": "Overture odontología Pocitos local",
+      "description": "Job allowlisted que consume un extracto local generado por scripts/overture-export.ts; no descarga datos desde la UI.",
+      "sourceType": "overture-file",
+      "category": "odontologia",
+      "categories": [
+        "odontologia",
+        "dentist"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/overture/dentists-pocitos.sample.json",
+      "format": "json",
+      "provider": "overture-file",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/dentists-pocitos.sample.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "category": "dentist",
+          "limit": 50
+        }
+      ]
     }
   ],
   "sources": {
@@ -591,6 +623,6 @@
       "osm-file",
       "osm-overpass"
     ],
-    "notes": "Phase 19 supports allowlisted OSM Overpass real jobs by bbox, city/zone and ICP tags with low/moderate limits, explicit UI execution, partial-error handling, and no scraping/Google Places/national searches."
+    "notes": "Phase 20 supports local-first Overture Places extracts generated with scripts/overture-export.ts by bbox/category and consumed through overture-file jobs; no UI downloads or national queries."
   }
 }

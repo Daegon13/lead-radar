@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "id": "overture-place-sample-dentist-1",
+      "name": "Clínica Dental Pocitos Demo",
+      "category": "dentist",
+      "confidence": 0.78,
+      "websites": ["https://clinicadentalpocitos.example"],
+      "socials": ["https://instagram.com/clinicadentalpocitosdemo"],
+      "phones": ["+598 2400 0000"],
+      "emails": ["contacto@clinicadentalpocitos.example"],
+      "address": "Bulevar España 2500, Montevideo",
+      "coordinates": { "lat": -34.9101, "lng": -56.1512 },
+      "country": "UY",
+      "city": "Montevideo",
+      "source": "Overture Places",
+      "sourceId": "overture-place-sample-dentist-1",
+      "sourceCheckedAt": "2026-06-20T00:00:00.000Z"
+    }
+  ]
+}

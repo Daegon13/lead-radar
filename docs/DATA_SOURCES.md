@@ -394,3 +394,30 @@ Jobs iniciales:
 - `osm-mvd-barberias-premium-pocitos` — barberías/peluquerías en Pocitos/Punta Carretas.
 
 Estos datos entran al pipeline normal de normalización, deduplicación, scoring, export JSON/CSV y revisión manual. Como OSM no garantiza teléfono, web ni redes, la contactabilidad puede bajar la prioridad; un lead sin contacto público no debe quedar como prioridad A.
+
+## Fase 20 — Overture DuckDB Exporter
+
+Lead Radar ahora incluye un exporter local para generar extractos de Overture Places reproducibles por bbox y categoría ICP sin ejecutar descargas desde la UI.
+
+Comando base:
+
+```bash
+npx jiti scripts/overture-export.ts \
+  --country UY \
+  --city Montevideo \
+  --zone pocitos \
+  --bbox -34.928,-56.166,-34.895,-56.132 \
+  --category dentist \
+  --out data/sources/uy/montevideo/overture/dentists-pocitos.json \
+  --limit 50 \
+  --format json
+```
+
+Decisiones:
+
+- El script vive fuera de la UI y escribe archivos locales bajo `data/sources/uy/montevideo/overture/`.
+- No agrega DuckDB como dependencia JS pesada. Si el binario `duckdb` está disponible en el sistema, ejecuta la consulta; si no está disponible o se usa `--dry-run`, genera un `.sql` listo para correr manualmente.
+- `--bbox`, `--category` y `--out` son obligatorios. No se permite consultar todo Uruguay o una ciudad completa sin bbox.
+- Las categorías ICP mapeadas incluyen odontología (`dentist`/`dental_clinic`), estética (`beauty_salon`/`spa`), veterinaria, inmobiliarias, abogados, contadores, peluquerías/barberías y fitness/yoga/pilates.
+- El output queda en formato compatible con `overture-file`: `id`, `name`, `category`, `confidence`, `websites`, `socials`, `phones`, `emails`, `address`, `coordinates`, `source`, `sourceId` y `sourceCheckedAt`.
+- La app consume únicamente el archivo local resultante mediante jobs allowlisted; no consulta Overture ni DuckDB desde el navegador.
