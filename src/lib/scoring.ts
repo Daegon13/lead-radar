@@ -95,15 +95,51 @@ function resolveAction(priority: Priority): NextAction {
   }
 }
 
-export function applyProspectingPriority(lead: Lead, score: LeadScoreResult): LeadScoreResult {
-  if (!lead.priority) {
-    return score;
+export function hasPublicContact(lead: Pick<Lead, "phone" | "whatsapp" | "instagram">): boolean {
+  return Boolean(lead.phone || lead.whatsapp || lead.instagram);
+}
+
+export function isProspectedLead(lead: Lead): boolean {
+  return Boolean(lead.source || lead.sourceCheckedAt || lead.scoreReasons?.length || lead.gapSignals?.length);
+}
+
+export function capPriorityForContactability(priority: Priority, lead: Pick<Lead, "phone" | "whatsapp" | "instagram">): Priority {
+  if (priority === "A" && !hasPublicContact(lead)) {
+    return "B";
   }
 
+  return priority;
+}
+
+export function getEffectivePriority(lead: Lead, score: LeadScoreResult = scoreLead(lead)): Priority {
+  const basePriority = isProspectedLead(lead) && lead.priority ? lead.priority : score.priority;
+  return capPriorityForContactability(basePriority, lead);
+}
+
+export function getEffectiveNextAction(lead: Lead, score: LeadScoreResult = scoreLead(lead)): NextAction {
+  if (isProspectedLead(lead) && lead.nextAction) {
+    if (getEffectivePriority(lead, score) === "A" && !hasPublicContact(lead)) {
+      return "dm_or_whatsapp";
+    }
+
+    return lead.nextAction;
+  }
+
+  return score.recommendedAction;
+}
+
+export function getEffectiveScoreSummary(lead: Lead, score: LeadScoreResult = scoreLead(lead)): string {
+  const priority = getEffectivePriority(lead, score);
+  const action = getEffectiveNextAction(lead, score);
+  return `${priority} (${score.total}/100): ${NEXT_ACTION_LABELS[action]}`;
+}
+
+export function applyProspectingPriority(lead: Lead, score: LeadScoreResult): LeadScoreResult {
   return {
     ...score,
-    priority: lead.priority,
-    summary: `${lead.priority} (${score.total}/100): ${NEXT_ACTION_LABELS[score.recommendedAction]}`,
+    priority: getEffectivePriority(lead, score),
+    recommendedAction: getEffectiveNextAction(lead, score),
+    summary: getEffectiveScoreSummary(lead, score),
   };
 }
 

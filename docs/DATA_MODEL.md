@@ -250,3 +250,13 @@ Los leads aceptan campos opcionales para registrar resultados de contacto sin ro
 - `dealValueEstimate`: estimación manual del valor potencial del deal.
 
 Estos campos siguen el enfoque local-first: se guardan junto con el lead en `localStorage` y se exportan en JSON. En CSV se aceptan `contactAttempts`, `nextFollowUpAt` y `dealValueEstimate` como columnas simples; el historial completo se preserva mejor en JSON.
+
+## Fase 16 — Contrato endurecido de providers
+
+La prioridad operativa ya no debe calcularse de forma distinta en cada pantalla. El modelo de dominio expone helpers puros para resolver prioridad, próxima acción y resumen efectivo a partir del lead y del score legacy:
+
+- `getEffectivePriority(lead)`: respeta `lead.priority` cuando el lead conserva metadata de prospección y, si no existe, cae al score legacy. La prioridad A se degrada si no hay contacto público (`phone`, `whatsapp` o `instagram`).
+- `getEffectiveNextAction(lead)`: usa la acción del pipeline prospectado cuando corresponde; si no hay metadata de prospección, usa la recomendación legacy.
+- `getEffectiveScoreSummary(lead)`: genera un resumen consistente con los dos helpers anteriores.
+
+Para leads prospectados, el importador y el pipeline deben conservar o completar trazabilidad mínima: `source`, `sourceCheckedAt`, `scoreReasons` y `gapSignals`. Los leads manuales antiguos siguen admitiendo esos campos como opcionales.

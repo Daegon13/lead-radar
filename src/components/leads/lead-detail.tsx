@@ -192,7 +192,7 @@ export function LeadDetail({ lead, onQuickUpdate, onLeadEnriched }: LeadDetailPr
             </h2>
             <dl className="grid gap-3 sm:grid-cols-2 text-sm">
               <div><dt className="text-zinc-500">Estado actual</dt><dd>{formatStatus(lead.status)}</dd></div>
-              <div><dt className="text-zinc-500">Próxima acción</dt><dd>{formatNextAction(lead.nextAction)}</dd></div>
+              <div><dt className="text-zinc-500">Próxima acción efectiva</dt><dd>{formatNextAction(score.recommendedAction)}</dd></div>
               <div><dt className="text-zinc-500">Seguimiento</dt><dd>{formatDate(lead.followUpDate)}</dd></div>
               <div><dt className="text-zinc-500">Demo recomendada</dt><dd>{lead.demoRecommended ? "Sí" : "No"}</dd></div>
             </dl>

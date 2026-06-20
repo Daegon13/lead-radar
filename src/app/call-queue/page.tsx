@@ -13,6 +13,7 @@ import {
 } from "@/lib/call-queue";
 import { AiResearcherControls } from "@/components/leads/ai-researcher-controls";
 import { useLeads } from "@/hooks/use-leads";
+import { getEffectiveNextAction } from "@/lib/scoring";
 import { formatNextAction } from "@/lib/utils";
 import type { Lead, Priority } from "@/types/lead";
 
@@ -46,6 +47,7 @@ function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
   onApplyAction: (action: CallQueueAction) => void;
 }) {
   const { lead, score, effectivePriority } = item;
+  const effectiveNextAction = getEffectiveNextAction(lead, score);
 
   return (
     <article className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -69,7 +71,7 @@ function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
           ) : null}
         </div>
         <p className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-          Próxima acción: <span className="font-medium">{formatNextAction(lead.nextAction)}</span>
+          Próxima acción: <span className="font-medium">{formatNextAction(effectiveNextAction)}</span>
         </p>
       </div>
 
@@ -84,7 +86,7 @@ function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
         </div>
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Próxima acción</h2>
-          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{formatNextAction(lead.nextAction)}</p>
+          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{formatNextAction(effectiveNextAction)}</p>
         </div>
       </div>
 

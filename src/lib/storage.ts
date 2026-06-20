@@ -1,4 +1,5 @@
 import { seedLeads } from "@/data/seed-leads";
+import { capPriorityForContactability, isProspectedLead } from "@/lib/scoring";
 import { calculateProspectFitScore } from "@/lib/prospecting/fit-score";
 import { normalizeProspect } from "@/lib/prospecting/normalize";
 import { leadStore } from "@/lib/storage/lead-store";
@@ -6,6 +7,7 @@ import type { Lead } from "@/types/lead";
 
 const VALID_STATUSES = new Set<Lead["status"]>(["new", "contacted", "qualified", "proposal", "won", "lost"]);
 const VALID_ACTIONS = new Set<Lead["nextAction"]>(["call_today", "dm_or_whatsapp", "follow_up", "disqualify"]);
+const VALID_PRIORITIES = new Set<NonNullable<Lead["priority"]>>(["A", "B", "C", "D"]);
 const VALID_DIGITAL_QUALITY = new Set<Lead["digitalPresenceQuality"]>(["none", "weak", "acceptable", "strong"]);
 const VALID_COMMERCIAL_POTENTIAL = new Set<Lead["commercialPotential"]>(["low", "medium", "high"]);
 const VALID_DECISION_ACCESS = new Set<Lead["decisionMakerAccess"]>(["none", "gatekeeper", "reachable", "direct"]);
@@ -131,6 +133,31 @@ function asAllowedString<T extends string>(value: unknown, allowed: Set<T>, fall
   return fallback;
 }
 
+function asOptionalAllowedString<T extends string>(value: unknown, allowed: Set<T>): T | undefined {
+  if (typeof value === "string" && allowed.has(value as T)) {
+    return value as T;
+  }
+
+  return undefined;
+}
+
+function normalizeProspectingContract(lead: Lead, fallbackSource: string, checkedAt: string): Lead {
+  if (!isProspectedLead(lead)) {
+    return lead;
+  }
+
+  const priority = lead.priority ? capPriorityForContactability(lead.priority, lead) : undefined;
+
+  return {
+    ...lead,
+    source: lead.source ?? fallbackSource,
+    sourceCheckedAt: lead.sourceCheckedAt ?? checkedAt,
+    gapSignals: lead.gapSignals ?? [],
+    scoreReasons: lead.scoreReasons ?? [],
+    priority,
+  };
+}
+
 function normalizeLead(candidate: unknown): Lead | null {
   if (!isObjectRecord(candidate)) {
     return null;
@@ -165,6 +192,7 @@ function normalizeLead(candidate: unknown): Lead | null {
     sourceUrl: asOptionalString(candidate.sourceUrl),
     sourceCheckedAt: asOptionalString(candidate.sourceCheckedAt),
     confidence: asOptionalNumber(candidate.confidence),
+    priority: asOptionalAllowedString(candidate.priority, VALID_PRIORITIES),
     gapSignals: asOptionalStringArray(candidate.gapSignals),
     scoreReasons: asOptionalStringArray(candidate.scoreReasons),
     salesAngle: asOptionalString(candidate.salesAngle),
@@ -339,6 +367,7 @@ export function mapExternalRecordToLead(
     sourceUrl: asOptionalString(getRecordValue(record, ["sourceUrl", "urlFuente"])),
     sourceCheckedAt: asOptionalString(getRecordValue(record, ["sourceCheckedAt", "checkedAt"])),
     confidence: parseNullableNumberLike(getRecordValue(record, ["confidence", "confianza"])),
+    priority: asOptionalAllowedString(getRecordValue(record, ["priority", "prioridad"]), VALID_PRIORITIES),
     gapSignals: asOptionalStringArray(getRecordValue(record, ["gapSignals", "digitalGapSignals"])),
     scoreReasons: asOptionalStringArray(getRecordValue(record, ["scoreReasons", "priorityReasons"])),
     salesAngle: asOptionalString(getRecordValue(record, ["salesAngle", "anguloComercial"])),
@@ -407,7 +436,7 @@ export function mapExternalRecordToLead(
     return { reason: `registro inválido (${origin})` };
   }
 
-  return { lead: normalized };
+  return { lead: normalizeProspectingContract(normalized, origin === "csv" ? "manual-import" : "unknown", now) };
 }
 
 function deduplicateLeads(

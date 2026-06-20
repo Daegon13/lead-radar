@@ -1,0 +1,8 @@
+[
+  {"fsq_id":"fsq-a","name":"Clínica Dental Prado","categories":[{"name":"Dentist"}],"location":{"country":"UY","locality":"Montevideo","formatted_address":"Av. Agraciada 1234"},"tel":"+59824000001","rating":4.8,"stats":{"total_ratings":86}},
+  {"fsq_id":"fsq-b","name":"Barbería Cordón Premium","categories":[{"name":"Barber Shop"}],"location":{"country":"UY","locality":"Montevideo","formatted_address":"Colonia 1500"},"tel":"+59824000002","instagram":"https://instagram.com/barbercordon","rating":4.5,"stats":{"total_ratings":22}},
+  {"fsq_id":"fsq-nocontact","name":"Estética Sin Contacto","categories":[{"name":"Beauty Salon"}],"location":{"country":"UY","locality":"Montevideo","formatted_address":"Durazno 900"},"rating":4.7,"stats":{"total_ratings":55}},
+  {"fsq_id":"fsq-lowmargin","name":"Kiosco La Esquina","categories":[{"name":"Convenience Store"}],"location":{"country":"UY","locality":"Montevideo","formatted_address":"Mercedes 900"},"tel":"+59824000003","rating":4.4,"stats":{"total_ratings":31}},
+  {"fsq_id":"fsq-dup","name":"Clínica Dental Prado","categories":[{"name":"Dentist"}],"location":{"country":"UY","locality":"Montevideo","formatted_address":"Av. Agraciada 1234"},"tel":"+59824000001","rating":4.8,"stats":{"total_ratings":86}},
+  {"fsq_id":"fsq-strongweb","name":"Hotel Fuerte Web","categories":[{"name":"Hotel"}],"location":{"country":"UY","locality":"Montevideo","formatted_address":"Rambla 1"},"tel":"+59824000004","website":"https://hotelfuerte.example.com","rating":4.9,"stats":{"total_ratings":210}}
+]

@@ -1,0 +1,8 @@
+[
+  {"osm_id":"osm-a","name":"Clínica Dental Prado","amenity":"dentist","addr:country":"UY","addr:city":"Montevideo","addr:street":"Av. Agraciada 1234","contact:phone":"+59824000001","rating":4.8,"reviews":86},
+  {"osm_id":"osm-b","name":"Barbería Cordón Premium","shop":"hairdresser","category":"barberia","addr:country":"UY","addr:city":"Montevideo","addr:street":"Colonia 1500","contact:phone":"+59824000002","instagram":"https://instagram.com/barbercordon","rating":4.5,"reviews":22},
+  {"osm_id":"osm-nocontact","name":"Estética Sin Contacto","shop":"beauty","category":"estetica","addr:country":"UY","addr:city":"Montevideo","addr:street":"Durazno 900","rating":4.7,"reviews":55},
+  {"osm_id":"osm-lowmargin","name":"Kiosco La Esquina","shop":"kiosk","category":"kiosco","addr:country":"UY","addr:city":"Montevideo","addr:street":"Mercedes 900","contact:phone":"+59824000003","rating":4.4,"reviews":31},
+  {"osm_id":"osm-dup","name":"Clínica Dental Prado","amenity":"dentist","addr:country":"UY","addr:city":"Montevideo","addr:street":"Av. Agraciada 1234","contact:phone":"+59824000001","rating":4.8,"reviews":86},
+  {"osm_id":"osm-strongweb","name":"Hotel Fuerte Web","tourism":"hotel","category":"hotel","addr:country":"UY","addr:city":"Montevideo","addr:street":"Rambla 1","contact:phone":"+59824000004","website":"https://hotelfuerte.example.com","rating":4.9,"reviews":210}
+]

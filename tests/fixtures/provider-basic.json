@@ -1,0 +1,8 @@
+[
+  {"id":"json-a","name":"Clínica Dental Prado","category":"odontologia","country":"UY","city":"Montevideo","address":"Av. Agraciada 1234","phone":"+59824000001","whatsapp":"+59899000001","rating":4.8,"reviewCount":86,"source":"json-fixture"},
+  {"id":"json-b","name":"Barbería Cordón Premium","category":"barberia","country":"UY","city":"Montevideo","address":"Colonia 1500","phone":"+59824000002","instagram":"https://instagram.com/barbercordon","rating":4.5,"reviewCount":22,"source":"json-fixture"},
+  {"id":"json-nocontact","name":"Estética Sin Contacto","category":"estetica","country":"UY","city":"Montevideo","address":"Durazno 900","rating":4.7,"reviewCount":55,"source":"json-fixture"},
+  {"id":"json-lowmargin","name":"Kiosco La Esquina","category":"kiosco","country":"UY","city":"Montevideo","address":"Mercedes 900","phone":"+59824000003","rating":4.4,"reviewCount":31,"source":"json-fixture"},
+  {"id":"json-dup","name":"Clínica Dental Prado","category":"odontologia","country":"UY","city":"Montevideo","address":"Av. Agraciada 1234","phone":"+59824000001","rating":4.8,"reviewCount":86,"source":"json-fixture"},
+  {"id":"json-strongweb","name":"Hotel Fuerte Web","category":"hotel","country":"UY","city":"Montevideo","address":"Rambla 1","phone":"+59824000004","website":"https://hotelfuerte.example.com","rating":4.9,"reviewCount":210,"source":"json-fixture"}
+]

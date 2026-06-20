@@ -1,0 +1,8 @@
+[
+  {"id":"ov-a","names":{"primary":"Clínica Dental Prado"},"categories":{"primary":"odontologia"},"addresses":[{"locality":"Montevideo","country":"UY","freeform":"Av. Agraciada 1234"}],"websites":[],"phones":["+59824000001"],"source":"overture-fixture"},
+  {"id":"ov-b","names":{"primary":"Barbería Cordón Premium"},"categories":{"primary":"barberia"},"addresses":[{"locality":"Montevideo","country":"UY","freeform":"Colonia 1500"}],"phones":["+59824000002"],"socials":["https://instagram.com/barbercordon"],"source":"overture-fixture"},
+  {"id":"ov-nocontact","names":{"primary":"Estética Sin Contacto"},"categories":{"primary":"estetica"},"addresses":[{"locality":"Montevideo","country":"UY","freeform":"Durazno 900"}],"source":"overture-fixture"},
+  {"id":"ov-lowmargin","names":{"primary":"Kiosco La Esquina"},"categories":{"primary":"kiosco"},"addresses":[{"locality":"Montevideo","country":"UY","freeform":"Mercedes 900"}],"phones":["+59824000003"],"source":"overture-fixture"},
+  {"id":"ov-dup","names":{"primary":"Clínica Dental Prado"},"categories":{"primary":"odontologia"},"addresses":[{"locality":"Montevideo","country":"UY","freeform":"Av. Agraciada 1234"}],"phones":["+59824000001"],"source":"overture-fixture"},
+  {"id":"ov-strongweb","names":{"primary":"Hotel Fuerte Web"},"categories":{"primary":"hotel"},"addresses":[{"locality":"Montevideo","country":"UY","freeform":"Rambla 1"}],"websites":["https://hotelfuerte.example.com"],"phones":["+59824000004"],"source":"overture-fixture"}
+]
