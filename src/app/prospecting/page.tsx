@@ -33,7 +33,8 @@ type ProspectingJobDefinition = {
   country?: string;
   city?: string;
   categories: string[];
-  sources: string[];
+  sourceType: string;
+  sources: Array<{ id?: string; type?: string; input?: string; format?: string }>;
   limit: number;
   minPriority: string;
   outputName: string;
@@ -650,7 +651,7 @@ export default function ProspectingPage() {
                     <h3 className="font-semibold">{job.label}</h3>
                     <p className="text-zinc-600 dark:text-zinc-400">{job.description}</p>
                     <p className="text-xs text-zinc-500">
-                      {job.city ?? "Sin ciudad"}, {job.country ?? "sin país"} · Categorías: {job.categories.join(", ")} · Fuentes: {job.sources.join(", ")} · Límite: {job.limit} · Mín. prioridad: {job.minPriority}
+                      {job.city ?? "Sin ciudad"}, {job.country ?? "sin país"} · Categorías: {job.categories.join(", ")} · Tipo: {job.sourceType} · Fuentes: {job.sources.map((source) => source.id ?? source.type ?? source.input ?? "local").join(", ")} · Límite: {job.limit} · Mín. prioridad: {job.minPriority}
                     </p>
                   </div>
                   <button

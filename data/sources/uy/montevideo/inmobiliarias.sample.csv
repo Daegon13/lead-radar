@@ -1,0 +1,3 @@
+id,name,category,country,city,address,website,instagram,whatsapp,phone,rating,reviews,source,sourceUrl
+sample-001,Negocio Público de Ejemplo,inmobiliaria,UY,Montevideo,"Dirección comercial pública 123",,@negocioejemplo,59899111222,24001234,4.5,25,Template manual público,https://example.local/fuente-publica
+sample-002,Otro Negocio de Ejemplo,inmobiliaria,UY,Montevideo,"Otra dirección comercial pública 456",https://example.local,@otronegocio,,24005678,4.2,12,Template manual público,https://example.local/fuente-publica-2

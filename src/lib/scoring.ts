@@ -1,5 +1,5 @@
-import { NEXT_ACTION_LABELS } from "@/lib/constants";
-import type { Lead, LeadScoreResult, NextAction, Priority, ScoreBreakdown } from "@/types/lead";
+import { NEXT_ACTION_LABELS } from "./constants";
+import type { Lead, LeadScoreResult, NextAction, Priority, ScoreBreakdown } from "../types/lead";
 
 function scoreVisibleDemand(rating: number | null, reviewCount: number): number {
   const reviewScore = Math.min(15, Math.floor(reviewCount / 20));
