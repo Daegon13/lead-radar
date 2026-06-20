@@ -308,3 +308,7 @@ Siguiente foco recomendado: consolidar métricas de conversión post-importació
 - Se consolida `data/sources/uy/` para data packs Overture, Foursquare y CSV manual curado.
 - Se agregan jobs multifuente V1 que combinan OSM real con archivos locales opcionales y toleran faltantes como errores parciales.
 - Google Places y scraping quedan explícitamente fuera de alcance.
+
+## Fase 26 completada: Real Data Quality & Yield Calibration
+
+Se agregó validación preventiva de data packs, estados de fuente precisos, definición operativa de callable lead, métricas de yield por corrida/fuente, reporte `prospect:yield` y mejoras de Run History/Review Ops para calibrar fuentes, rubros, zonas, bbox y tags antes de escalar adquisición.

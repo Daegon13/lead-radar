@@ -64,3 +64,7 @@ Si falta un archivo local, la fuente se reporta como error parcial/request_faile
 - No `limit > 100` ni `timeoutMs > 25000`.
 - No Google Places en esta fase: queda como fase futura opcional por costo, API key y compliance.
 - No scraping: solo APIs/datasets abiertos o archivos curados trazables.
+
+## Fase 26: calidad real y yield
+
+Antes de ejecutar proveedores locales se valida el data pack: existencia, extensión esperada, JSON/CSV parseable, no vacío, nombre/equivalente, categoría inferible por registro o job, ubicación/city y trazabilidad si existe. Archivos opcionales faltantes quedan como `skipped_source`; archivos presentes rotos quedan como `invalid_source`.

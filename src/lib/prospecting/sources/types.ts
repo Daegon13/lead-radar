@@ -10,6 +10,8 @@ export type SourceCapability =
   | "rate-limited"
   | "future";
 
+export type SourceStatus = "success" | "empty_result" | "timeout" | "request_failed" | "skipped_source" | "invalid_source" | "partial_success";
+
 export type DataSourceInput = {
   id?: string;
   type?: string;
@@ -40,7 +42,7 @@ export type DataSourceResult = {
   rawProspects: RawProspect[];
   warnings: string[];
   errors?: string[];
-  status?: "request_failed" | "timeout" | "empty_result" | "success" | "partial_success";
+  status?: SourceStatus;
 };
 
 export type DataSourceProvider = {

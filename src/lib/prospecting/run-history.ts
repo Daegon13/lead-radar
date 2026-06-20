@@ -5,7 +5,7 @@ import { getEnabledProspectingJobs } from "./jobs/registry";
 import type { AcquisitionSourceSummary } from "./run-prospecting-job";
 import type { Lead, Priority } from "@/types/lead";
 
-export type RunHistoryStatus = "success" | "empty_result" | "timeout" | "request_failed" | "partial_success";
+export type RunHistoryStatus = "success" | "empty_result" | "timeout" | "request_failed" | "skipped_source" | "invalid_source" | "partial_success";
 export type ReviewLeadState = "approved" | "discarded" | "imported";
 
 export type RunReviewState = {
@@ -36,6 +36,12 @@ export type RunHistoryEntry = {
   jsonPath?: string;
   csvPath?: string;
   summaryPath: string;
+  callableLeads?: number;
+  callableRate?: number;
+  contactabilityRate?: number;
+  digitalGapRate?: number;
+  skippedSourcesCount?: number;
+  invalidSourcesCount?: number;
   reviewState?: RunReviewState;
 };
 
@@ -66,6 +72,7 @@ type RawRunSummary = {
   runStartedAt?: string;
   runFinishedAt?: string;
   durationMs?: number;
+  callableLeads?: number; callableRate?: number; contactabilityRate?: number; digitalGapRate?: number; skippedSourcesCount?: number; invalidSourcesCount?: number;
 };
 
 const RUNS_ROOT = path.join(process.cwd(), "exports", "prospecting-schedule");
@@ -100,9 +107,11 @@ function deriveRunStatus(sources: AcquisitionSourceSummary[], exported: number, 
   if (sources.length === 0) return errors.length ? "request_failed" : exported > 0 ? "success" : "empty_result";
   const statuses = sources.map((source) => source.status);
   const hasSuccessLike = sources.some((source) => source.status === "success" && source.recordsAccepted > 0);
-  const hasFailure = statuses.some((status) => status === "request_failed" || status === "timeout");
+  const hasFailure = statuses.some((status) => status === "request_failed" || status === "timeout" || status === "invalid_source");
   if (hasSuccessLike && hasFailure) return "partial_success";
   if (statuses.every((status) => status === "timeout")) return "timeout";
+  if (statuses.every((status) => status === "invalid_source")) return "invalid_source";
+  if (statuses.every((status) => status === "skipped_source")) return "skipped_source";
   if (statuses.every((status) => status === "request_failed")) return "request_failed";
   if (exported === 0 || statuses.every((status) => status === "empty_result")) return "empty_result";
   return "success";
@@ -155,6 +164,12 @@ function toEntry(summaryPath: string, summary: RawRunSummary, reviewState?: RunR
     jsonPath: relativeSafePath(summary.jsonPath),
     csvPath: relativeSafePath(summary.csvPath),
     summaryPath: path.relative(process.cwd(), summaryPath),
+    callableLeads: Number(summary.callableLeads ?? 0),
+    callableRate: Number(summary.callableRate ?? 0),
+    contactabilityRate: Number(summary.contactabilityRate ?? 0),
+    digitalGapRate: Number(summary.digitalGapRate ?? 0),
+    skippedSourcesCount: Number(summary.skippedSourcesCount ?? 0),
+    invalidSourcesCount: Number(summary.invalidSourcesCount ?? 0),
     reviewState,
   };
 }
