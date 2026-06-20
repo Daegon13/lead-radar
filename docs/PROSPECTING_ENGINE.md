@@ -497,3 +497,20 @@ Reglas operativas:
 - Los errores de archivo faltante quedan en el resumen por fuente y usan el mensaje legible del provider local.
 - El bbox es obligatorio para evitar corridas nacionales o excesivamente amplias.
 - Los outputs de Overture son extractos auditables y deben revisarse manualmente antes de habilitar contacto comercial.
+
+## Fase 22: AI Source Scout y AI Researcher con Responses API
+
+La Fase 22 mantiene el pipeline determinístico como camino principal y agrega una capa opcional server-only con OpenAI Responses API para tareas acotadas:
+
+- `src/lib/prospecting/ai-researcher.ts` usa Responses API con herramienta `web_search` por defecto y fallback compatible a `web_search_preview` si el entorno/proyecto todavía lo requiere.
+- `src/lib/prospecting/ai-source-scout.ts` implementa AI Source Scout para descubrir posibles fuentes públicas por país, ciudad, zona y rubro. Devuelve sólo fuentes sugeridas con `sourceName`, `sourceUrl`, `sourceType`, `expectedData`, `trustLevel`, `extractionDifficulty`, `notes` y `evidenceUrls`.
+- `POST /api/ai-researcher/source-scout` es server-only y responde `missing_api_key`/`disabled` si falta configuración o si la feature no está habilitada.
+- `/prospecting` expone el botón opcional “Buscar fuentes públicas con IA”, muestra advertencias de costo y permite copiar URLs/notas. No dispara extracción automática.
+
+Guardrails obligatorios:
+
+1. AI Source Scout no devuelve leads finales ni negocios inventados.
+2. AI Researcher enriquece únicamente leads ya seleccionados A/B desde controles explícitos.
+3. No se contactan negocios ni se automatiza scraping.
+4. Toda sugerencia debe conservar evidencia URL para auditoría humana.
+5. `OPENAI_API_KEY` sólo se lee en rutas/módulos server-side y nunca se envía al frontend.
