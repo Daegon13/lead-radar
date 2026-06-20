@@ -40,16 +40,35 @@ type ProspectingJobDefinition = {
   outputName: string;
 };
 
+type AcquisitionSourceSummary = {
+  sourceId: string;
+  sourceLabel: string;
+  recordsRead: number;
+  recordsAccepted: number;
+  recordsRejected: number;
+  warnings: string[];
+  errors: string[];
+  durationMs: number;
+};
+
 type JobRunSummary = {
   recordsRead: number;
+  totalRecordsRead?: number;
   filtered: number;
   normalized: number;
+  totalNormalized?: number;
   duplicateCount: number;
+  totalDuplicates?: number;
   exported: number;
+  totalExported?: number;
   discarded: number;
+  sourcesUsed?: string[];
   priorityCounts: Record<"A" | "B" | "C" | "D", number>;
   jsonPath: string;
   csvPath: string;
+  sources?: AcquisitionSourceSummary[];
+  errors?: string[];
+  warnings?: string[];
   leads: Lead[];
 };
 
@@ -665,9 +684,43 @@ export default function ProspectingPage() {
                 </div>
                 {run.status === "success" && run.summary ? (
                   <div className="mt-3 rounded-md bg-emerald-50 p-3 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
-                    <p>Leídos: {run.summary.recordsRead}. Filtrados: {run.summary.filtered}. Normalizados: {run.summary.normalized}. Duplicados: {run.summary.duplicateCount}. Exportados: {run.summary.exported}.</p>
+                    <p>Leídos: {run.summary.totalRecordsRead ?? run.summary.recordsRead}. Normalizados: {run.summary.totalNormalized ?? run.summary.normalized}. Duplicados: {run.summary.totalDuplicates ?? run.summary.duplicateCount}. Exportados: {run.summary.totalExported ?? run.summary.exported}. Descartados: {run.summary.discarded}.</p>
                     <p>A/B/C/D: {run.summary.priorityCounts.A}/{run.summary.priorityCounts.B}/{run.summary.priorityCounts.C}/{run.summary.priorityCounts.D}</p>
-                    <p className="break-all">Archivo generado: {run.summary.jsonPath}</p>
+                    {run.summary.sourcesUsed?.length ? <p>Fuentes con datos: {run.summary.sourcesUsed.join(", ")}</p> : null}
+                    <p className="break-all">JSON generado: {run.summary.jsonPath}</p>
+                    <p className="break-all">CSV revisión: {run.summary.csvPath}</p>
+                    {run.summary.sources?.length ? (
+                      <div className="mt-2 overflow-x-auto rounded border border-emerald-200 bg-white/60 dark:border-emerald-800 dark:bg-emerald-950/50">
+                        <table className="min-w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-emerald-200 dark:border-emerald-800">
+                              <th className="px-2 py-1">Fuente</th>
+                              <th className="px-2 py-1">Leídos</th>
+                              <th className="px-2 py-1">Aceptados</th>
+                              <th className="px-2 py-1">Rechazados</th>
+                              <th className="px-2 py-1">Duración</th>
+                              <th className="px-2 py-1">Avisos/errores</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {run.summary.sources.map((source) => (
+                              <tr key={`${source.sourceId}-${source.sourceLabel}`} className="border-b border-emerald-100 last:border-0 dark:border-emerald-900">
+                                <td className="px-2 py-1">{source.sourceLabel} <span className="text-emerald-700 dark:text-emerald-300">({source.sourceId})</span></td>
+                                <td className="px-2 py-1">{source.recordsRead}</td>
+                                <td className="px-2 py-1">{source.recordsAccepted}</td>
+                                <td className="px-2 py-1">{source.recordsRejected}</td>
+                                <td className="px-2 py-1">{source.durationMs} ms</td>
+                                <td className="px-2 py-1">
+                                  {[...source.warnings, ...source.errors].length ? [...source.warnings, ...source.errors].join(" · ") : "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                    {run.summary.warnings?.length ? <p className="mt-2">Warnings: {run.summary.warnings.join(" · ")}</p> : null}
+                    {run.summary.errors?.length ? <p className="mt-2 text-amber-700 dark:text-amber-200">Errores parciales: {run.summary.errors.join(" · ")}</p> : null}
                     <button type="button" onClick={() => importJobRunResults(job.id)} className="mt-2 rounded-md border border-emerald-300 px-3 py-1 text-xs font-medium">
                       Importar resultados a revisión
                     </button>

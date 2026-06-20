@@ -465,3 +465,12 @@ El pipeline aplicado es el mismo en UI y CLI: lectura de archivo local, filtrado
 - No se implementa Google Places.
 - No se implementa scraping.
 - No se automatizan contactos.
+
+
+## Fase 18 — Multisource Acquisition Engine
+
+- Un job de prospección puede declarar varias `sources` allowlisted y ejecutarlas en una única corrida de adquisición.
+- Cada corrida genera un `AcquisitionRun` con resumen global y `AcquisitionSourceSummary` por fuente: registros leídos, aceptados, rechazados, warnings, errores y duración.
+- Los errores parciales no destruyen la corrida si al menos una fuente entrega resultados válidos; el resumen conserva el error por fuente y continúa con normalización, dedupe global, scoring y export JSON/CSV.
+- La deduplicación sigue siendo global entre fuentes. El merge conserva contacto, website y trazabilidad combinada cuando la lógica existente puede hacerlo; enriquecimiento más avanzado de duplicados queda como fase posterior.
+- Google Places, scraping, automatización de mensajes y claves API en cliente siguen fuera de alcance.

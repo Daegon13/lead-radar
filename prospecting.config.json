@@ -289,6 +289,46 @@
       ]
     },
     {
+      "id": "uy-mvd-multisource-local-demo",
+      "enabled": true,
+      "day": "saturday",
+      "label": "Montevideo multisource local demo",
+      "description": "Job de Fase 18 para validar adquisición multifuente local con dedupe global y resumen por fuente; usa samples allowlisted, no scraping ni Google Places.",
+      "sourceType": "multisource-local",
+      "category": "",
+      "categories": [
+        "estetica",
+        "odontologia"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/estetica-premium.sample.csv",
+      "format": "csv",
+      "provider": "generic",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/estetica-premium.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        },
+        {
+          "id": "csv-local",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/odontologia.sample.csv",
+          "format": "csv",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        }
+      ]
+    },
+    {
       "id": "uy-mvd-estetica-premium-real-local",
       "enabled": false,
       "day": "monday",
@@ -329,6 +369,6 @@
       "osm-file",
       "osm-overpass"
     ],
-    "notes": "Phase 17 supports local Uruguay CSV/JSON files under data/sources/<country>/<city>/ using public, traceable commercial data only. Google Places, scraping, and automatic downloads remain out of scope."
+    "notes": "Phase 18 supports multisource acquisition runs across local/allowlisted providers with per-source summaries, partial-error handling, and global dedupe. Google Places, scraping, and automatic downloads remain out of scope."
   }
 }
