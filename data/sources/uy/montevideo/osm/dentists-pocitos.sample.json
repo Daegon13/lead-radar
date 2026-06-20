@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "id": "osm-node-dental-pocitos-demo",
+      "name": "Clínica Dental Pocitos Demo",
+      "category": "dentist",
+      "country": "UY",
+      "city": "Montevideo",
+      "neighborhood": "Pocitos",
+      "address": "Bulevar España 2500, Montevideo",
+      "phone": "+598 2400 0000",
+      "lat": -34.91009,
+      "lng": -56.15121,
+      "source": "OpenStreetMap local file",
+      "sourceId": "osm-node-dental-pocitos-demo",
+      "sourceUrl": "https://www.openstreetmap.org/",
+      "sourceCheckedAt": "2026-06-20T00:00:00.000Z"
+    }
+  ]
+}

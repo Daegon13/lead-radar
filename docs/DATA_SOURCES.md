@@ -421,3 +421,14 @@ Decisiones:
 - Las categorías ICP mapeadas incluyen odontología (`dentist`/`dental_clinic`), estética (`beauty_salon`/`spa`), veterinaria, inmobiliarias, abogados, contadores, peluquerías/barberías y fitness/yoga/pilates.
 - El output queda en formato compatible con `overture-file`: `id`, `name`, `category`, `confidence`, `websites`, `socials`, `phones`, `emails`, `address`, `coordinates`, `source`, `sourceId` y `sourceCheckedAt`.
 - La app consume únicamente el archivo local resultante mediante jobs allowlisted; no consulta Overture ni DuckDB desde el navegador.
+
+## Foursquare OS Places local-first (Fase 21)
+
+Foursquare OS Places se consume como archivo local normalizado, no como API de frontend. El flujo operativo está documentado en `docs/FOURSQUARE_OS_IMPORT.md`: el Places Portal y sus tokens se usan fuera de Lead Radar para generar exports compatibles con DuckDB/Spark/PyIceberg, y luego `scripts/foursquare-normalize.ts` transforma JSON/CSV a un archivo consumible por `foursquare-file-provider`.
+
+Jobs allowlisted:
+
+- `foursquare-mvd-local-sample`: fixture Foursquare normalizado.
+- `uy-mvd-osm-overture-foursquare-local-demo`: OSM + Overture + Foursquare local para validar adquisición multifuente y dedupe global.
+
+Regla de seguridad: no guardar tokens en el repo, no configurar tokens en `prospecting.config.json` y no exponer credenciales al frontend.

@@ -612,6 +612,87 @@
           "limit": 50
         }
       ]
+    },
+    {
+      "id": "foursquare-mvd-local-sample",
+      "enabled": true,
+      "day": "saturday",
+      "label": "Foursquare OS Places Montevideo local sample",
+      "description": "Job allowlisted que consume un export normalizado local de Foursquare OS Places generado por scripts/foursquare-normalize.ts; no usa tokens ni APIs desde la app.",
+      "sourceType": "foursquare-file",
+      "category": "",
+      "categories": [
+        "odontologia",
+        "estetica"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/foursquare/places.normalized.sample.json",
+      "format": "json",
+      "provider": "foursquare-file",
+      "minPriority": "D",
+      "limit": 50,
+      "sources": [
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/places.normalized.sample.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": "uy-mvd-osm-overture-foursquare-local-demo",
+      "enabled": true,
+      "day": "saturday",
+      "label": "Montevideo OSM + Overture + Foursquare local demo",
+      "description": "Job multifuente allowlisted para validar Fase 21 con OSM local, Overture local y Foursquare OS Places normalizado; verifica dedupe global sin credenciales ni llamadas desde frontend.",
+      "sourceType": "multisource-local",
+      "category": "dentist",
+      "categories": [
+        "odontologia",
+        "dentist",
+        "estetica"
+      ],
+      "city": "Montevideo",
+      "country": "UY",
+      "input": "data/sources/uy/montevideo/foursquare/places.normalized.sample.json",
+      "format": "json",
+      "provider": "foursquare-file",
+      "minPriority": "D",
+      "limit": 100,
+      "sources": [
+        {
+          "id": "osm-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/osm/dentists-pocitos.sample.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        },
+        {
+          "id": "overture-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/overture/dentists-pocitos.sample.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        },
+        {
+          "id": "foursquare-file",
+          "type": "local-file",
+          "input": "data/sources/uy/montevideo/foursquare/places.normalized.sample.json",
+          "format": "json",
+          "country": "UY",
+          "city": "Montevideo",
+          "limit": 50
+        }
+      ]
     }
   ],
   "sources": {
@@ -623,6 +704,6 @@
       "osm-file",
       "osm-overpass"
     ],
-    "notes": "Phase 20 supports local-first Overture Places extracts generated with scripts/overture-export.ts by bbox/category and consumed through overture-file jobs; no UI downloads or national queries."
+    "notes": "Phase 21 supports local-first Foursquare OS Places exports normalized with scripts/foursquare-normalize.ts and consumed through foursquare-file jobs; credentials stay outside the repo/frontend."
   }
 }

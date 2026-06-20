@@ -1,0 +1,176 @@
+{
+  "records": [
+    {
+      "id": "fsq-mvd-dental-pocitos-duplicate",
+      "name": "Clínica Dental Pocitos Demo",
+      "category": "Dentist",
+      "country": "UY",
+      "city": "Montevideo",
+      "neighborhood": "Pocitos",
+      "address": "Bulevar España 2500, Montevideo",
+      "website": "https://clinicadentalpocitos.example",
+      "phone": "+598 2400 0000",
+      "lat": -34.91011,
+      "lng": -56.15119,
+      "source": "Foursquare OS Places",
+      "sourceId": "fsq-mvd-dental-pocitos-duplicate",
+      "sourceUrl": "https://opensource.foursquare.com/os-places/",
+      "sourceCheckedAt": "2026-06-20T00:00:00.000Z",
+      "confidence": 0.82,
+      "sourcePayload": {
+        "fsq_place_id": "fsq-mvd-dental-pocitos-duplicate",
+        "name": "Clínica Dental Pocitos Demo",
+        "categories": [
+          {
+            "id": 15014,
+            "name": "Dentist"
+          }
+        ],
+        "location": {
+          "address": "Bulevar España 2500",
+          "formatted_address": "Bulevar España 2500, Montevideo",
+          "locality": "Montevideo",
+          "region": "Pocitos",
+          "country": "UY"
+        },
+        "geocodes": {
+          "main": {
+            "latitude": -34.91011,
+            "longitude": -56.15119
+          }
+        },
+        "tel": "+598 2400 0000",
+        "website": "https://clinicadentalpocitos.example",
+        "confidence": 0.82
+      }
+    },
+    {
+      "id": "fsq-mvd-spa-web-1",
+      "name": "Punta Spa Boutique",
+      "category": "Spa",
+      "country": "UY",
+      "city": "Montevideo",
+      "neighborhood": "Punta Carretas",
+      "address": "José Ellauri 740, Montevideo",
+      "website": "https://puntaspa.example",
+      "phone": "+598 2711 1111",
+      "email": "reservas@puntaspa.example",
+      "lat": -34.9194,
+      "lng": -56.1582,
+      "source": "Foursquare OS Places",
+      "sourceId": "fsq-mvd-spa-web-1",
+      "sourceUrl": "https://opensource.foursquare.com/os-places/",
+      "sourceCheckedAt": "2026-06-20T00:00:00.000Z",
+      "confidence": 0.88,
+      "sourcePayload": {
+        "fsq_place_id": "fsq-mvd-spa-web-1",
+        "name": "Punta Spa Boutique",
+        "categories": [
+          {
+            "id": 11073,
+            "name": "Spa"
+          }
+        ],
+        "location": {
+          "address": "José Ellauri 740",
+          "formatted_address": "José Ellauri 740, Montevideo",
+          "locality": "Montevideo",
+          "region": "Punta Carretas",
+          "country": "UY"
+        },
+        "geocodes": {
+          "main": {
+            "latitude": -34.9194,
+            "longitude": -56.1582
+          }
+        },
+        "tel": "+598 2711 1111",
+        "website": "https://puntaspa.example",
+        "email": "reservas@puntaspa.example",
+        "confidence": 0.88
+      }
+    },
+    {
+      "id": "fsq-mvd-beauty-no-web-1",
+      "name": "Estética Brillo Pocitos",
+      "category": "Beauty Salon",
+      "country": "UY",
+      "city": "Montevideo",
+      "neighborhood": "Pocitos",
+      "address": "Benito Blanco 930, Montevideo",
+      "phone": "+598 2700 2222",
+      "lat": -34.9087,
+      "lng": -56.1488,
+      "source": "Foursquare OS Places",
+      "sourceId": "fsq-mvd-beauty-no-web-1",
+      "sourceUrl": "https://opensource.foursquare.com/os-places/",
+      "sourceCheckedAt": "2026-06-20T00:00:00.000Z",
+      "confidence": 0.73,
+      "sourcePayload": {
+        "fsq_place_id": "fsq-mvd-beauty-no-web-1",
+        "name": "Estética Brillo Pocitos",
+        "categories": [
+          {
+            "id": 11071,
+            "name": "Beauty Salon"
+          }
+        ],
+        "location": {
+          "address": "Benito Blanco 930",
+          "formatted_address": "Benito Blanco 930, Montevideo",
+          "locality": "Montevideo",
+          "region": "Pocitos",
+          "country": "UY"
+        },
+        "geocodes": {
+          "main": {
+            "latitude": -34.9087,
+            "longitude": -56.1488
+          }
+        },
+        "tel": "+598 2700 2222",
+        "confidence": 0.73
+      }
+    },
+    {
+      "id": "fsq-mvd-dental-incomplete-1",
+      "name": "Consultorio Dental Cordón",
+      "category": "Dentist",
+      "country": "UY",
+      "city": "Montevideo",
+      "neighborhood": "Cordón",
+      "address": "Eduardo Acevedo 1450, Montevideo",
+      "lat": -34.9038,
+      "lng": -56.1785,
+      "source": "Foursquare OS Places",
+      "sourceId": "fsq-mvd-dental-incomplete-1",
+      "sourceUrl": "https://opensource.foursquare.com/os-places/",
+      "sourceCheckedAt": "2026-06-20T00:00:00.000Z",
+      "confidence": 0.61,
+      "sourcePayload": {
+        "fsq_place_id": "fsq-mvd-dental-incomplete-1",
+        "name": "Consultorio Dental Cordón",
+        "categories": [
+          {
+            "id": 15014,
+            "name": "Dentist"
+          }
+        ],
+        "location": {
+          "address": "Eduardo Acevedo 1450",
+          "formatted_address": "Eduardo Acevedo 1450, Montevideo",
+          "locality": "Montevideo",
+          "region": "Cordón",
+          "country": "UY"
+        },
+        "geocodes": {
+          "main": {
+            "latitude": -34.9038,
+            "longitude": -56.1785
+          }
+        },
+        "confidence": 0.61
+      }
+    }
+  ]
+}
