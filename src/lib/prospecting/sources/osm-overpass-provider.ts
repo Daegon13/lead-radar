@@ -3,8 +3,10 @@ import type { DataSourceInput, DataSourceProvider, DataSourceResult } from "./ty
 
 const DEFAULT_OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const DEFAULT_TIMEOUT_MS = 12_000;
+const MAX_TIMEOUT_MS = 25_000;
 const DEFAULT_LIMIT = 25;
-const MAX_LIMIT = 50;
+const MAX_LIMIT = 100;
+const DEFAULT_USER_AGENT = "LeadRadar/phase-19 OSM Overpass Uruguay jobs (local-first; manual review; contact: Diego)";
 
 type OverpassElement = {
   id?: number;
@@ -15,36 +17,49 @@ type OverpassElement = {
   tags?: Record<string, string>;
 };
 
+type OsmTag = { key: string; value: string };
+
 function escapeOverpass(value: string): string {
   return value.replace(/["\\]/g, "\\$&");
 }
 
-function buildTagFilters(input: DataSourceInput): string {
-  const tags = input.tags ?? (input.category ? { amenity: [input.category], shop: [input.category], tourism: [input.category], healthcare: [input.category] } : { amenity: ["restaurant", "cafe", "dentist", "clinic"], shop: ["beauty", "hairdresser"] });
-  return Object.entries(tags)
-    .flatMap(([key, values]) => values.slice(0, 6).map((value) => `["${escapeOverpass(key)}"="${escapeOverpass(value)}"]`))
-    .join("");
+function normalizeTags(input: DataSourceInput): OsmTag[] {
+  const tags = input.tags ?? (input.category ? { amenity: [input.category], shop: [input.category], tourism: [input.category], healthcare: [input.category], office: [input.category], leisure: [input.category] } : { amenity: ["restaurant", "cafe", "dentist", "clinic"], shop: ["beauty", "hairdresser"] });
+  const pairs = Array.isArray(tags)
+    ? tags
+    : Object.entries(tags).flatMap(([key, values]) => values.map((value) => ({ key, value })));
+
+  return pairs
+    .filter((tag) => tag.key.trim() && tag.value.trim())
+    .slice(0, 12);
+}
+
+function buildSelector(tag: OsmTag, bbox: string, elementType: "node" | "way" | "relation"): string {
+  return `${elementType}["${escapeOverpass(tag.key)}"="${escapeOverpass(tag.value)}"](${bbox});`;
 }
 
 function buildQuery(input: DataSourceInput): string {
   if (input.query) return input.query;
-  if (!input.bbox) throw new Error("OSM Overpass provider requires a bbox or explicit query to avoid broad searches.");
+  if (!input.bbox) throw new Error("OSM Overpass provider requires a bbox to avoid broad searches.");
   const [south, west, north, east] = input.bbox;
+  const bbox = `${south},${west},${north},${east}`;
   const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
-  const filters = buildTagFilters(input);
-  const timeoutSeconds = Math.ceil(Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, DEFAULT_TIMEOUT_MS) / 1000);
-  return `[out:json][timeout:${timeoutSeconds}];(node${filters}(${south},${west},${north},${east});way${filters}(${south},${west},${north},${east});relation${filters}(${south},${west},${north},${east}););out center ${limit};`;
+  const tags = normalizeTags(input);
+  if (tags.length === 0) throw new Error("OSM Overpass provider requires at least one tag filter.");
+  const timeoutSeconds = Math.ceil(Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS) / 1000);
+  const selectors = tags.flatMap((tag) => [buildSelector(tag, bbox, "node"), buildSelector(tag, bbox, "way"), buildSelector(tag, bbox, "relation")]);
+  return `[out:json][timeout:${timeoutSeconds}];(${selectors.join("")});out center ${limit};`;
 }
 
-function elementToProspect(element: OverpassElement, checkedAt: string): RawProspect {
+function elementToProspect(element: OverpassElement, checkedAt: string, input: DataSourceInput): RawProspect {
   const tags = element.tags ?? {};
   const id = [element.type, element.id].filter(Boolean).join("/");
   return {
     id,
     name: tags.name,
-    category: tags.amenity ?? tags.shop ?? tags.tourism ?? tags.healthcare ?? tags.craft ?? tags.office,
-    country: tags["addr:country"],
-    city: tags["addr:city"] ?? tags["addr:town"] ?? tags["addr:village"],
+    category: input.category ?? tags.amenity ?? tags.shop ?? tags.tourism ?? tags.healthcare ?? tags.craft ?? tags.office ?? tags.leisure ?? tags.sport,
+    country: tags["addr:country"] ?? input.country,
+    city: tags["addr:city"] ?? tags["addr:town"] ?? tags["addr:village"] ?? input.city,
     neighborhood: tags["addr:suburb"] ?? tags["addr:neighbourhood"],
     address: tags["addr:full"] ?? ([tags["addr:street"], tags["addr:housenumber"]].filter(Boolean).join(" ") || undefined),
     website: tags.website ?? tags["contact:website"],
@@ -58,7 +73,7 @@ function elementToProspect(element: OverpassElement, checkedAt: string): RawPros
     sourceId: id,
     sourceUrl: id ? `https://www.openstreetmap.org/${id}` : "https://www.openstreetmap.org/",
     sourceCheckedAt: checkedAt,
-    confidence: 0.55,
+    confidence: tags.name ? 0.55 : 0.35,
     sourcePayload: element,
   };
 }
@@ -70,7 +85,7 @@ export const osmOverpassProvider: DataSourceProvider = {
   async run(input): Promise<DataSourceResult> {
     const checkedAt = input.checkedAt ?? new Date().toISOString();
     const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
-    const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+    const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -78,15 +93,30 @@ export const osmOverpassProvider: DataSourceProvider = {
         method: "POST",
         headers: {
           "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "user-agent": input.userAgent ?? "LeadRadar/phase-14 local prospecting research (contact: manual)",
+          "user-agent": input.userAgent ?? DEFAULT_USER_AGENT,
         },
         body: new URLSearchParams({ data: buildQuery({ ...input, limit, timeoutMs }) }),
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`Overpass request failed with ${response.status}`);
+      if (!response.ok) throw new Error(`Overpass request failed with ${response.status} ${response.statusText}`.trim());
       const payload = (await response.json()) as { elements?: OverpassElement[] };
       const elements = Array.isArray(payload.elements) ? payload.elements.slice(0, limit) : [];
-      return { sourceId: this.id, sourceLabel: this.label, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt)), warnings: [] };
+      const warnings = elements.length === 0 ? ["OSM Overpass no devolvió resultados para este bbox/rubro; puede ser cobertura incompleta o filtro demasiado estricto."] : ["OSM Overpass es fuente comunitaria: teléfono, web, rubro y dirección pueden estar incompletos."];
+      return { sourceId: this.id, sourceLabel: this.label, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt, input)), warnings };
+    } catch (error) {
+      const message = error instanceof Error && error.name === "AbortError"
+        ? `Overpass request timed out after ${timeoutMs}ms.`
+        : error instanceof Error
+          ? `Overpass request failed: ${error.message}`
+          : "Overpass request failed with unknown error.";
+      return {
+        sourceId: this.id,
+        sourceLabel: this.label,
+        checkedAt,
+        input,
+        rawProspects: [],
+        warnings: [`${message} No se detuvo la corrida; revisar conectividad, estado de Overpass o bajar el límite antes de reintentar.`],
+      };
     } finally {
       clearTimeout(timeout);
     }

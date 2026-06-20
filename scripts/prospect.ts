@@ -6,12 +6,14 @@ import {
   type ProspectRunOptions,
   type Provider,
 } from "../src/lib/prospecting/run-prospecting-job";
+import { getProspectingJobById, jobToRunOptions } from "../src/lib/prospecting/jobs/registry";
 
 export { leadsToReviewCsv, runProspecting } from "../src/lib/prospecting/run-prospecting-job";
 export type { Format, ProspectRunOptions, ProspectRunSummary, Provider } from "../src/lib/prospecting/run-prospecting-job";
 
 function usage(): never {
-  console.error(`Uso: npm run prospect:run -- --input <archivo> --format csv|json --out <ruta> [--provider generic|overture|foursquare|osm] [--country UY] [--city Montevideo] [--category restaurant] [--limit 50]`);
+  console.error(`Uso: npm run prospect:run -- --jobId <job-registrado>
+  o: npm run prospect:run -- --input <archivo> --format csv|json --out <ruta> [--provider generic|overture|foursquare|osm|osm-overpass] [--country UY] [--city Montevideo] [--category restaurant] [--limit 50]`);
   process.exit(1);
 }
 
@@ -28,10 +30,16 @@ function parseArgs(argv: string[]): ProspectRunOptions {
     index += 1;
   }
 
+  if (values.jobId) {
+    const job = getProspectingJobById(values.jobId);
+    if (!job) usage();
+    return jobToRunOptions(job);
+  }
+
   if (!values.input || !values.format || !values.out) usage();
   if (values.format !== "csv" && values.format !== "json") usage();
   const provider = values.provider ?? "generic";
-  if (provider !== "generic" && provider !== "overture" && provider !== "foursquare" && provider !== "osm") usage();
+  if (provider !== "generic" && provider !== "overture" && provider !== "foursquare" && provider !== "osm" && provider !== "osm-overpass") usage();
 
   const limit = values.limit === undefined ? undefined : Number(values.limit);
   if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) usage();

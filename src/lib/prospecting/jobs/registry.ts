@@ -42,6 +42,8 @@ type ConfigJob = {
 };
 
 const VALID_PRIORITIES: Priority[] = ["A", "B", "C", "D"];
+const MAX_CONFIG_LIMIT = 100;
+const MAX_OVERPASS_TIMEOUT_MS = 25_000;
 
 function slugify(value: string): string {
   return value
@@ -52,11 +54,26 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "") || "prospecting-job";
 }
 
+function assertSafeSources(job: ConfigJob, sources: DataSourceInput[]) {
+  for (const source of sources) {
+    const sourceId = source.id ?? source.type ?? job.provider;
+    if (sourceId !== "osm-overpass") continue;
+    if (!source.bbox) throw new Error(`Job ${job.id} usa osm-overpass sin bbox; las consultas amplias no están permitidas.`);
+    if ((source.limit ?? job.limit ?? 50) > MAX_CONFIG_LIMIT) throw new Error(`Job ${job.id} supera el límite máximo ${MAX_CONFIG_LIMIT} para config.`);
+    if ((source.timeoutMs ?? 0) > MAX_OVERPASS_TIMEOUT_MS) throw new Error(`Job ${job.id} supera timeoutMs máximo ${MAX_OVERPASS_TIMEOUT_MS}.`);
+  }
+}
+
 function normalizeJob(job: ConfigJob): ProspectingJobDefinition {
   const provider = job.provider ?? "generic";
   const minPriority = VALID_PRIORITIES.includes(job.minPriority ?? "D")
     ? (job.minPriority ?? "D")
     : "D";
+
+  const sources = job.sources?.length
+    ? job.sources.map((source) => ({ ...source, id: source.id ?? source.provider ?? provider, input: source.input ?? job.input, format: source.format ?? job.format }))
+    : [{ id: provider === "generic" ? (job.format === "csv" ? "csv-local" : "json-local") : provider, input: job.input, format: job.format }];
+  assertSafeSources(job, sources);
 
   return {
     id: job.id,
@@ -68,10 +85,8 @@ function normalizeJob(job: ConfigJob): ProspectingJobDefinition {
     city: job.city,
     categories: job.categories?.length ? job.categories : [job.category],
     sourceType: job.sourceType ?? (provider === "generic" ? "local-file" : provider),
-    sources: job.sources?.length
-      ? job.sources.map((source) => ({ ...source, id: source.id ?? source.provider ?? provider, input: source.input ?? job.input, format: source.format ?? job.format }))
-      : [{ id: provider === "generic" ? (job.format === "csv" ? "csv-local" : "json-local") : provider, input: job.input, format: job.format }],
-    limit: job.limit ?? 50,
+    sources,
+    limit: Math.min(job.limit ?? 50, MAX_CONFIG_LIMIT),
     minPriority,
     outputName: job.outputName ?? `lead-radar-${slugify(job.id)}`,
     input: job.input,
