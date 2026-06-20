@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { loadOrInitializeLeads, resetStoredLeads, saveLeads } from "@/lib/storage";
-import { scoreLead } from "@/lib/scoring";
+import { applyProspectingPriority, scoreLead } from "@/lib/scoring";
 import type { Lead, LeadFormValues } from "@/types/lead";
 
 export type ScoredLead = {
@@ -22,20 +22,20 @@ function normalizeLead(lead: Lead): Lead {
   };
 }
 
-function loadInitialLeads(): Lead[] | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return loadOrInitializeLeads().map(normalizeLead);
-}
-
 function createLeadId(): string {
   return `lead-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function useLeads() {
-  const [leads, setLeadsState] = useState<Lead[] | null>(loadInitialLeads);
+  const [leads, setLeadsState] = useState<Lead[] | null>(null);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setLeadsState(loadOrInitializeLeads().map(normalizeLead));
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   const safeLeads = useMemo(() => leads ?? [], [leads]);
   const isLoaded = leads !== null;
@@ -45,7 +45,7 @@ export function useLeads() {
       safeLeads
         .map((lead) => ({
           lead,
-          score: scoreLead(lead),
+          score: applyProspectingPriority(lead, scoreLead(lead)),
         }))
         .sort((a, b) => b.score.total - a.score.total),
     [safeLeads],

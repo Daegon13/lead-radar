@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { scoreLead } from "@/lib/scoring";
+import { applyProspectingPriority, scoreLead } from "@/lib/scoring";
 import { formatNextAction, formatStatus } from "@/lib/utils";
 import type { Lead, LeadFormValues } from "@/types/lead";
 import { AiResearcherControls } from "@/components/leads/ai-researcher-controls";
@@ -81,7 +81,7 @@ function OptionalText({ value }: { value?: string }) {
 }
 
 export function LeadDetail({ lead, onQuickUpdate, onLeadEnriched }: LeadDetailProps) {
-  const score = scoreLead(lead);
+  const score = applyProspectingPriority(lead, scoreLead(lead));
   const showDemoIndicator = lead.demoRecommended;
 
   return (

@@ -95,6 +95,18 @@ function resolveAction(priority: Priority): NextAction {
   }
 }
 
+export function applyProspectingPriority(lead: Lead, score: LeadScoreResult): LeadScoreResult {
+  if (!lead.priority) {
+    return score;
+  }
+
+  return {
+    ...score,
+    priority: lead.priority,
+    summary: `${lead.priority} (${score.total}/100): ${NEXT_ACTION_LABELS[score.recommendedAction]}`,
+  };
+}
+
 export function scoreLead(lead: Lead): LeadScoreResult {
   const breakdown: ScoreBreakdown = {
     visibleDemand: scoreVisibleDemand(lead.rating, lead.reviewCount),

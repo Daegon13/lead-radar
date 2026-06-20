@@ -163,15 +163,17 @@ export default function ProspectingPage() {
     radio: "",
     rubro: "",
   });
-  const [hotspotRuns, setHotspotRuns] = useState<HotspotRunRegistry>(() =>
-    loadHotspotRunRegistry(),
-  );
+  const [hotspotRuns, setHotspotRuns] = useState<HotspotRunRegistry>({});
   const [candidates, setCandidates] = useState<ProspectCandidate[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [jobs, setJobs] = useState<ProspectingJobDefinition[]>([]);
   const [jobListError, setJobListError] = useState<string | null>(null);
   const [jobRuns, setJobRuns] = useState<Record<string, JobRunState>>({});
+
+  useEffect(() => {
+    setHotspotRuns(loadHotspotRunRegistry());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
