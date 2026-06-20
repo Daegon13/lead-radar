@@ -423,3 +423,9 @@ Reglas operativas:
 - La API key solo se lee en rutas server-side; el frontend recibe estado, proveedor, modelo y límites, nunca credenciales.
 - El lote automático está acotado por `AI_RESEARCHER_MAX_BATCH_SIZE` y solo toma leads A/B ordenados por score.
 - La respuesta de IA se guarda como metadatos auditables (`aiResearchedAt`, `aiProvider`, `aiModel`, `evidenceUrls`) y no modifica scoring ni datos primarios del lead.
+
+## Fase 16 — Provider Contract Hardening
+
+Antes de conectar fuentes reales grandes, el contrato entre providers, normalización, dedupe, scoring, import/export, UI, métricas y call queue queda validado con fixtures locales. Los fixtures en `tests/fixtures/` cubren CSV, JSON genérico, Overture-like, Foursquare-like y OSM-like con casos A/B, sin contacto, bajo margen, duplicado y presencia web fuerte.
+
+Los jobs registrados siguen siendo allowlisted: la API recibe únicamente `jobId`, resuelve una definición interna habilitada y ejecuta fuentes locales configuradas, sin aceptar comandos arbitrarios desde la UI. El resumen de corrida expone totales encontrados/leídos, deduplicados, descartados, conteo A/B/C/D, errores y paths exportados.

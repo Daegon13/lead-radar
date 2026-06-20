@@ -1,0 +1,7 @@
+id,businessName,category,country,city,address,phone,whatsapp,instagram,websiteUrl,rating,reviewCount,source
+csv-a,Clínica Dental Prado,odontologia,UY,Montevideo,Av. Agraciada 1234,+59824000001,+59899000001,, ,4.8,86,csv-fixture
+csv-b,Barbería Cordón Premium,barberia,UY,Montevideo,Colonia 1500,+59824000002,,https://instagram.com/barbercordon,,4.5,22,csv-fixture
+csv-nocontact,Estética Sin Contacto,estetica,UY,Montevideo,Durazno 900,,,,,4.7,55,csv-fixture
+csv-lowmargin,Kiosco La Esquina,kiosco,UY,Montevideo,Mercedes 900,+59824000003,,,,4.4,31,csv-fixture
+csv-dup,Clínica Dental Prado,odontologia,UY,Montevideo,Av. Agraciada 1234,+59824000001,+59899000001,, ,4.8,86,csv-fixture
+csv-strongweb,Hotel Fuerte Web,hotel,UY,Montevideo,Rambla 1,+59824000004,,,https://hotelfuerte.example.com,4.9,210,csv-fixture

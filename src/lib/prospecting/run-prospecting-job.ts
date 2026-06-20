@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { dedupeProspects } from "./dedupe";
 import { getDataSourceProvider, type DataSourceInput } from "./sources";
+import { capPriorityForContactability } from "../scoring";
 import { calculateProspectFitScore } from "./fit-score";
 import { normalizeProspects, type NormalizedProspectRecord } from "./normalize";
 import type { Lead, LeadFormValues, Priority } from "../../types/lead";
@@ -119,7 +120,7 @@ function buildLead(prospect: NormalizedProspectRecord, row: number): Lead {
     sourceUrl: prospect.sourceUrl,
     sourceCheckedAt: now,
     confidence: fitScore.gap.confidence,
-    priority: fitScore.priority,
+    priority: capPriorityForContactability(fitScore.priority, { phone, whatsapp, instagram }),
     gapSignals,
     scoreReasons,
     salesAngle: fitScore.salesAngle,
@@ -182,15 +183,18 @@ async function loadProviderRecords(options: ProspectRunOptions): Promise<RawReco
 
 export type ProspectRunSummary = {
   recordsRead: number;
+  totalFound: number;
   filtered: number;
   normalized: number;
   duplicateCount: number;
+  deduplicated: number;
   exported: number;
   discarded: number;
   priorityCounts: Record<Priority, number>;
   jsonPath: string;
   csvPath: string;
   leads: Lead[];
+  errors: string[];
 };
 
 export async function runProspecting(options: ProspectRunOptions): Promise<ProspectRunSummary> {
@@ -222,14 +226,17 @@ export async function runProspecting(options: ProspectRunOptions): Promise<Prosp
 
   return {
     recordsRead: records.length,
+    totalFound: records.length,
     filtered: filtered.length,
     normalized: normalized.length,
     duplicateCount,
+    deduplicated: duplicateCount,
     exported: leads.length,
     discarded: records.length - filtered.length + Math.max(0, normalized.length - cleanProspects.length),
     priorityCounts,
     jsonPath,
     csvPath,
     leads,
+    errors: [],
   };
 }

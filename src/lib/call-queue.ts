@@ -1,3 +1,4 @@
+import { getEffectiveNextAction, getEffectivePriority, hasPublicContact } from "@/lib/scoring";
 import type { Lead, LeadScoreResult, LeadStatus, NextAction, Priority } from "@/types/lead";
 
 export type CallQueueAction =
@@ -44,22 +45,9 @@ const ACTION_STATE: Record<CallQueueAction, { status: LeadStatus; nextAction: Ne
   discarded: { status: "lost", nextAction: "disqualify" },
 };
 
-export function hasPublicContact(lead: Pick<Lead, "phone" | "whatsapp" | "instagram">): boolean {
-  return Boolean(lead.phone || lead.whatsapp || lead.instagram);
-}
-
-export function resolveCallQueuePriority(scorePriority: Priority, lead: Lead): Priority {
-  if (scorePriority === "A" && !hasPublicContact(lead)) {
-    return "B";
-  }
-
-  return scorePriority;
-}
-
 export function buildCallQueueItem(lead: Lead, score: LeadScoreResult): CallQueueItem {
   const contactable = hasPublicContact(lead);
-  const effectivePriority = resolveCallQueuePriority(score.priority, lead);
-
+  const effectivePriority = getEffectivePriority(lead, score);
   return {
     lead,
     score,
@@ -81,8 +69,8 @@ export function sortCallQueueItems(items: CallQueueItem[]): CallQueueItem[] {
     if (scoreDelta !== 0) return scoreDelta;
 
     if (a.lead.nextAction !== b.lead.nextAction) {
-      if (a.lead.nextAction === "call_today") return -1;
-      if (b.lead.nextAction === "call_today") return 1;
+      if (getEffectiveNextAction(a.lead, a.score) === "call_today") return -1;
+      if (getEffectiveNextAction(b.lead, b.score) === "call_today") return 1;
     }
 
     return a.lead.businessName.localeCompare(b.lead.businessName);

@@ -1,4 +1,4 @@
-import { applyProspectingPriority, scoreLead } from "@/lib/scoring";
+import { getEffectivePriority, scoreLead } from "@/lib/scoring";
 import type { Lead, LeadOutcomeType, Priority } from "@/types/lead";
 
 export const RESPONSE_OUTCOMES = new Set<LeadOutcomeType>([
@@ -134,7 +134,7 @@ export function calculateCommercialFeedbackStats(leads: Lead[]): CommercialFeedb
   let interested = 0;
 
   for (const lead of leads) {
-    leadsByPriority[applyProspectingPriority(lead, scoreLead(lead)).priority] += 1;
+    leadsByPriority[getEffectivePriority(lead, scoreLead(lead))] += 1;
 
     const outcomeEvents = getOutcomeEvents(lead);
     const attempts = lead.contactAttempts ?? outcomeEvents.length;

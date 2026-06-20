@@ -89,7 +89,7 @@ export function LeadTable({ leads }: LeadTableProps) {
                   {formatStatus(lead.status)}
                 </span>
               </td>
-              <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{formatNextAction(lead.nextAction)}</td>
+              <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{formatNextAction(score.recommendedAction)}</td>
               <td className="px-4 py-3 text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Link
