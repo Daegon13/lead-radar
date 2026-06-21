@@ -39,10 +39,23 @@ export default function MetricsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Llamados realizados" value={stats.totalContactAttempts} help={`${stats.contactedLeads} leads con al menos un intento`} />
-        <MetricCard label="Tasa de respuesta" value={`${stats.responseRate}%`} help="Respuestas sobre intentos registrados" />
+        <MetricCard label="Tasa de respuesta" value={`${stats.answeredRate}%`} help="Respondidos sobre intentos registrados" />
         <MetricCard label="Tasa de interés" value={`${stats.interestRate}%`} help="Interés, reunión, propuesta o ganado" />
-        <MetricCard label="Leads cargados" value={leads.length} help="Persistidos localmente" />
+        <MetricCard label="Tasa de cierre" value={`${stats.closeRate}%`} help="Ganados sobre intentos" />
       </div>
+
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Embudo comercial</h2>
+        <div className="grid gap-2 sm:grid-cols-6">
+          {Object.entries({ Llamados: stats.funnel.called, Respondidos: stats.funnel.answered, Interesados: stats.funnel.interested, Reuniones: stats.funnel.meetings, Propuestas: stats.funnel.proposals, Cierres: stats.funnel.won }).map(([label, value]) => (
+            <div key={label} className="rounded-md bg-zinc-50 p-3 text-sm dark:bg-zinc-900"><p className="text-zinc-500">{label}</p><p className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{value}</p></div>
+          ))}
+        </div>
+        <div className="mt-3 grid gap-2 text-xs text-zinc-600 dark:text-zinc-400 sm:grid-cols-4">
+          <p>No answer: {stats.noAnswerRate}%</p><p>Número equivocado: {stats.wrongContactRate}%</p><p>No contactar: {stats.doNotContactRate}%</p><p>Sin presupuesto: {stats.noBudgetRate}%</p>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Leads por prioridad</h2>
@@ -57,8 +70,10 @@ export default function MetricsPage() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <SegmentTable title="Fuentes con mejor interés" rows={stats.bestSources} empty="Registrá llamadas para comparar fuentes." />
         <SegmentTable title="Rubros con mejor respuesta" rows={stats.bestCategories} empty="Registrá llamadas para comparar rubros." />
-        <SegmentTable title="Zonas con mejor respuesta" rows={stats.bestLocations} empty="Registrá llamadas para comparar zonas." />
+        <SegmentTable title="Zonas con más avance" rows={stats.bestLocations} empty="Registrá llamadas para comparar zonas." />
+        <SegmentTable title="Callable vs non-callable" rows={stats.callableSegments} empty="Registrá outcomes para validar callable lead." />
       </div>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
@@ -69,17 +84,22 @@ export default function MetricsPage() {
           <ul className="flex flex-wrap gap-2 text-sm">
             {stats.frequentObjections.map((item) => (
               <li key={item.objection} className="rounded-full bg-zinc-100 px-3 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                {item.objection} · {item.count}
+                {item.label} · {item.count}
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Recomendaciones de calibración</h2>
+        <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700 dark:text-zinc-300">{stats.recommendations.map((item) => <li key={item}>{item}</li>)}</ul>
+      </section>
     </section>
   );
 }
 
-function SegmentTable({ title, rows, empty }: { title: string; rows: Array<{ name: string; attempts: number; responseRate: number; interestRate: number }>; empty: string }) {
+function SegmentTable({ title, rows, empty }: { title: string; rows: Array<{ name: string; attempts: number; answeredRate: number; interestRate: number; meetingRate?: number; proposalRate?: number; closeRate?: number }>; empty: string }) {
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{title}</h2>
@@ -89,11 +109,11 @@ function SegmentTable({ title, rows, empty }: { title: string; rows: Array<{ nam
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="text-left text-xs uppercase tracking-wide text-zinc-500">
-              <tr><th className="py-2">Segmento</th><th className="py-2">Intentos</th><th className="py-2">Respuesta</th><th className="py-2">Interés</th></tr>
+              <tr><th className="py-2">Segmento</th><th className="py-2">Intentos</th><th className="py-2">Respuesta</th><th className="py-2">Interés</th><th className="py-2">Reunión</th><th className="py-2">Cierre</th></tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {rows.map((row) => (
-                <tr key={row.name}><td className="py-2 font-medium">{row.name}</td><td className="py-2">{row.attempts}</td><td className="py-2">{row.responseRate}%</td><td className="py-2">{row.interestRate}%</td></tr>
+                <tr key={row.name}><td className="py-2 font-medium">{row.name}</td><td className="py-2">{row.attempts}</td><td className="py-2">{row.answeredRate}%</td><td className="py-2">{row.interestRate}%</td><td className="py-2">{row.meetingRate ?? 0}%</td><td className="py-2">{row.closeRate ?? 0}%</td></tr>
               ))}
             </tbody>
           </table>

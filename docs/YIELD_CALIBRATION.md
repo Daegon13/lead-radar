@@ -33,3 +33,7 @@ Lee `exports/prospecting-schedule`, genera `exports/reports/yield-calibration-la
 ## Calibración
 
 Repetir jobs con alto `callableRate`, buena contactabilidad y A/B. Ajustar bbox/tags cuando hay cero resultados. Corregir `invalid_source`; no confundir con `skipped_source`, que solo indica data pack opcional faltante.
+
+## Fase 27: calibración por outcomes
+
+El yield técnico ahora se complementa con outcomes comerciales posteriores. Un job no debe repetirse solo por exportar leads callable: debe revisarse si esos leads fueron llamados, respondieron, mostraron interés, pidieron reunión/propuesta o cerraron. `prospect:outcomes` cruza outcomes disponibles y genera recomendaciones no destructivas para repetir, ajustar o pausar fuentes/rubros/zonas.

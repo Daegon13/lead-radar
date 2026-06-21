@@ -1,23 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import {
-  applyCallQueueAction,
   buildCallQueueItem,
-  CALL_QUEUE_ACTION_LABELS,
   sortCallQueueItems,
-  type CallQueueAction,
   type CallQueueItem,
 } from "@/lib/call-queue";
 import { AiResearcherControls } from "@/components/leads/ai-researcher-controls";
+import { OutcomeLogger } from "@/components/leads/outcome-logger";
 import { useLeads } from "@/hooks/use-leads";
 import { getEffectiveNextAction } from "@/lib/scoring";
 import { formatNextAction } from "@/lib/utils";
 import type { Lead, Priority } from "@/types/lead";
-
-const ACTIONS = Object.keys(CALL_QUEUE_ACTION_LABELS) as CallQueueAction[];
 
 function priorityBadgeClass(priority: Priority): string {
   switch (priority) {
@@ -40,11 +36,9 @@ function opportunityReason(lead: Lead, fallback: string): string {
   return lead.scoreReasons?.[0] ?? lead.problemObservation ?? lead.salesAngle ?? fallback;
 }
 
-function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
+function CallQueueCard({ item, onLeadChange }: {
   item: CallQueueItem;
-  note: string;
-  onNoteChange: (value: string) => void;
-  onApplyAction: (action: CallQueueAction) => void;
+  onLeadChange: (lead: Lead) => void;
 }) {
   const { lead, score, effectivePriority } = item;
   const effectiveNextAction = getEffectiveNextAction(lead, score);
@@ -90,27 +84,8 @@ function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
         </div>
       </div>
 
-      <label className="block space-y-1 text-sm">
-        <span className="font-medium text-zinc-700 dark:text-zinc-300">Nota de la llamada</span>
-        <textarea
-          className="min-h-20 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-          value={note}
-          onChange={(event) => onNoteChange(event.target.value)}
-          placeholder="Ej.: atiende dueño, prefiere WhatsApp, llamar mañana 10:00..."
-        />
-      </label>
-
-      <div className="flex flex-wrap gap-2">
-        {ACTIONS.map((action) => (
-          <button
-            key={action}
-            type="button"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
-            onClick={() => onApplyAction(action)}
-          >
-            {CALL_QUEUE_ACTION_LABELS[action]}
-          </button>
-        ))}
+      <div className="rounded-md border border-zinc-100 p-3 dark:border-zinc-800">
+        <OutcomeLogger lead={lead} onLeadChange={onLeadChange} compact />
       </div>
     </article>
   );
@@ -118,7 +93,6 @@ function CallQueueCard({ item, note, onNoteChange, onApplyAction }: {
 
 export default function CallQueuePage() {
   const { scoredLeads, leads, isLoaded, updateLead, setLeads } = useLeads();
-  const [notesByLeadId, setNotesByLeadId] = useState<Record<string, string>>({});
 
   const items = useMemo(
     () => sortCallQueueItems(scoredLeads.map(({ lead, score }) => buildCallQueueItem(lead, score))),
@@ -126,11 +100,6 @@ export default function CallQueuePage() {
   );
   const primaryItems = items.filter((item) => item.isPrimary);
   const secondaryItems = items.filter((item) => !item.isPrimary && !item.lead.optOut);
-
-  function applyAction(lead: Lead, action: CallQueueAction) {
-    updateLead(applyCallQueueAction(lead, action, notesByLeadId[lead.id]));
-    setNotesByLeadId((current) => ({ ...current, [lead.id]: "" }));
-  }
 
   function applyBatchEnrichment(enrichedLeads: Lead[]) {
     const enrichedById = new Map(enrichedLeads.map((lead) => [lead.id, lead]));
@@ -163,9 +132,7 @@ export default function CallQueuePage() {
             <CallQueueCard
               key={item.lead.id}
               item={item}
-              note={notesByLeadId[item.lead.id] ?? ""}
-              onNoteChange={(value) => setNotesByLeadId((current) => ({ ...current, [item.lead.id]: value }))}
-              onApplyAction={(action) => applyAction(item.lead, action)}
+              onLeadChange={updateLead}
             />
           ))}
         </div>

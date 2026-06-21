@@ -17,17 +17,46 @@ export type DecisionMakerAccess = "none" | "gatekeeper" | "reachable" | "direct"
 export type UrgencySignal = "none" | "low" | "medium" | "high";
 
 export type LeadOutcomeType =
-  | "no_answer"
+  | "not_contacted"
+  | "called_no_answer"
+  | "wrong_number"
   | "answered_not_interested"
+  | "answered_send_info"
   | "interested"
   | "meeting_booked"
   | "proposal_requested"
+  | "proposal_sent"
   | "won"
-  | "lost";
+  | "lost"
+  | "do_not_contact";
+
+export type LeadObjectionType =
+  | "already_has_website"
+  | "already_has_provider"
+  | "uses_instagram_only"
+  | "no_budget"
+  | "not_priority"
+  | "send_info"
+  | "call_later"
+  | "not_decision_maker"
+  | "bad_timing"
+  | "wrong_business"
+  | "unknown";
+
+export type CommercialTemperature = "cold" | "warm" | "hot" | "blocked";
+export type DealStage = LeadOutcomeType;
 
 export type LeadOutcomeEvent = {
   id: string;
   outcome: LeadOutcomeType;
+  occurredAt: string;
+  note?: string;
+  objection?: LeadObjectionType;
+};
+
+export type LeadObjectionEvent = {
+  id: string;
+  objection: LeadObjectionType;
   occurredAt: string;
   note?: string;
 };
@@ -51,6 +80,11 @@ export type LeadProspectingMetadata = {
   lastOutcome?: LeadOutcomeEvent;
   outcomeHistory?: LeadOutcomeEvent[];
   nextFollowUpAt?: string;
+  lastObjection?: LeadObjectionType;
+  objectionHistory?: LeadObjectionEvent[];
+  commercialTemperature?: CommercialTemperature;
+  estimatedDealValue?: number;
+  dealStage?: DealStage;
   dealValueEstimate?: number;
   researchSummary?: string;
   verifiedWebsite?: string;
