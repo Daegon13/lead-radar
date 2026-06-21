@@ -244,3 +244,7 @@ Rubros soportados por plantillas específicas:
 - gimnasios boutique/pilates/yoga.
 
 Si el rubro no matchea una plantilla, el sistema usa una plantilla genérica para negocios locales de servicios.
+
+## Registro de outcomes de llamada
+
+Después de cada contacto humano, Diego debe registrar outcome, objeción opcional, nota breve y follow-up. Las objeciones frecuentes sirven para ajustar apertura y diagnóstico: proveedor actual, sin presupuesto, Instagram-only, llamar después o no decisor. `do_not_contact` debe respetarse y no debe disparar nuevos contactos.

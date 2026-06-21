@@ -3,6 +3,7 @@ import { capPriorityForContactability, isProspectedLead } from "@/lib/scoring";
 import { calculateProspectFitScore } from "@/lib/prospecting/fit-score";
 import { normalizeProspect } from "@/lib/prospecting/normalize";
 import { leadStore } from "@/lib/storage/lead-store";
+import { isValidObjection, isValidOutcome } from "@/lib/outcomes";
 import type { Lead } from "@/types/lead";
 
 const VALID_STATUSES = new Set<Lead["status"]>(["new", "contacted", "qualified", "proposal", "won", "lost"]);
@@ -12,15 +13,7 @@ const VALID_DIGITAL_QUALITY = new Set<Lead["digitalPresenceQuality"]>(["none", "
 const VALID_COMMERCIAL_POTENTIAL = new Set<Lead["commercialPotential"]>(["low", "medium", "high"]);
 const VALID_DECISION_ACCESS = new Set<Lead["decisionMakerAccess"]>(["none", "gatekeeper", "reachable", "direct"]);
 const VALID_URGENCY = new Set<Lead["urgencySignal"]>(["none", "low", "medium", "high"]);
-const VALID_OUTCOMES = new Set([
-  "no_answer",
-  "answered_not_interested",
-  "interested",
-  "meeting_booked",
-  "proposal_requested",
-  "won",
-  "lost",
-]);
+
 
 function cloneLeads(leads: Lead[]): Lead[] {
   return leads.map((lead) => ({ ...lead }));
@@ -52,15 +45,16 @@ function asOptionalNumber(value: unknown): number | undefined {
 }
 
 function asOptionalOutcomeEvent(value: unknown): Lead["lastOutcome"] {
-  if (!isObjectRecord(value) || typeof value.outcome !== "string" || !VALID_OUTCOMES.has(value.outcome)) {
+  if (!isObjectRecord(value) || typeof value.outcome !== "string" || (!isValidOutcome(value.outcome) && value.outcome !== "no_answer")) {
     return undefined;
   }
 
   return {
     id: asString(value.id, `outcome-${Math.random().toString(36).slice(2, 10)}`),
-    outcome: value.outcome as NonNullable<Lead["lastOutcome"]>["outcome"],
+    outcome: (value.outcome === "no_answer" ? "called_no_answer" : value.outcome) as NonNullable<Lead["lastOutcome"]>["outcome"],
     occurredAt: asString(value.occurredAt, new Date().toISOString()),
     note: asOptionalString(value.note),
+    objection: isValidObjection(value.objection) ? value.objection : undefined,
   };
 }
 
@@ -70,6 +64,25 @@ function asOptionalOutcomeHistory(value: unknown): Lead["outcomeHistory"] {
   }
 
   const events = value.map(asOptionalOutcomeEvent).filter((event): event is NonNullable<Lead["lastOutcome"]> => Boolean(event));
+  return events.length > 0 ? events : undefined;
+}
+
+
+function asOptionalObjectionEvent(value: unknown): Lead["objectionHistory"] extends Array<infer T> | undefined ? T | undefined : never {
+  if (!isObjectRecord(value) || !isValidObjection(value.objection)) {
+    return undefined as never;
+  }
+  return {
+    id: asString(value.id, `objection-${Math.random().toString(36).slice(2, 10)}`),
+    objection: value.objection,
+    occurredAt: asString(value.occurredAt, new Date().toISOString()),
+    note: asOptionalString(value.note),
+  } as never;
+}
+
+function asOptionalObjectionHistory(value: unknown): Lead["objectionHistory"] {
+  if (!Array.isArray(value)) return undefined;
+  const events = value.map(asOptionalObjectionEvent).filter(Boolean) as NonNullable<Lead["objectionHistory"]>;
   return events.length > 0 ? events : undefined;
 }
 
@@ -205,6 +218,11 @@ function normalizeLead(candidate: unknown): Lead | null {
     lastOutcome: asOptionalOutcomeEvent(candidate.lastOutcome),
     outcomeHistory: asOptionalOutcomeHistory(candidate.outcomeHistory),
     nextFollowUpAt: asOptionalString(candidate.nextFollowUpAt),
+    lastObjection: isValidObjection(candidate.lastObjection) ? candidate.lastObjection : undefined,
+    objectionHistory: asOptionalObjectionHistory(candidate.objectionHistory),
+    commercialTemperature: asOptionalAllowedString(candidate.commercialTemperature, new Set(["cold", "warm", "hot", "blocked"])),
+    estimatedDealValue: asOptionalNumber(candidate.estimatedDealValue),
+    dealStage: isValidOutcome(candidate.dealStage) ? candidate.dealStage : undefined,
     dealValueEstimate: asOptionalNumber(candidate.dealValueEstimate),
     researchSummary: asOptionalString(candidate.researchSummary),
     verifiedWebsite: asOptionalString(candidate.verifiedWebsite),
@@ -378,6 +396,10 @@ export function mapExternalRecordToLead(
     optOut: parseBooleanLike(getRecordValue(record, ["optOut"])),
     contactAttempts: parseNullableNumberLike(getRecordValue(record, ["contactAttempts"])),
     nextFollowUpAt: asOptionalString(getRecordValue(record, ["nextFollowUpAt"])),
+    lastObjection: asOptionalString(getRecordValue(record, ["lastObjection"])),
+    commercialTemperature: asOptionalString(getRecordValue(record, ["commercialTemperature"])),
+    estimatedDealValue: parseNullableNumberLike(getRecordValue(record, ["estimatedDealValue"])),
+    dealStage: asOptionalString(getRecordValue(record, ["dealStage"])),
     dealValueEstimate: parseNullableNumberLike(getRecordValue(record, ["dealValueEstimate"])),
     researchSummary: asOptionalString(getRecordValue(record, ["researchSummary"])),
     verifiedWebsite: asOptionalString(getRecordValue(record, ["verifiedWebsite"])),

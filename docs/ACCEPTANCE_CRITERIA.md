@@ -120,3 +120,12 @@ Una feature está done cuando:
 - Cada corrida nueva escribe métricas de yield y conserva compatibilidad con summaries antiguos.
 - Review Ops permite revisar callable/non-callable e importar solo callable A/B.
 - `npm run prospect:yield` genera reportes JSON/CSV para decidir qué jobs repetir o ajustar.
+
+## Fase 27 — Outcome calibration
+
+- Outcomes y objeciones tipados y auditables.
+- Leads antiguos normalizan campos faltantes y outcome legacy `no_answer`.
+- Call Queue y Lead Detail registran outcomes sin automatizar contacto.
+- Metrics muestra embudo, tasas, segmentos, objeciones y recomendaciones.
+- `npm run prospect:outcomes` genera JSON/CSV aun sin outcomes reales.
+- El scoring no cambia pesos automáticamente; solo se proponen ajustes manuales.

@@ -312,3 +312,7 @@ Siguiente foco recomendado: consolidar métricas de conversión post-importació
 ## Fase 26 completada: Real Data Quality & Yield Calibration
 
 Se agregó validación preventiva de data packs, estados de fuente precisos, definición operativa de callable lead, métricas de yield por corrida/fuente, reporte `prospect:yield` y mejoras de Run History/Review Ops para calibrar fuentes, rubros, zonas, bbox y tags antes de escalar adquisición.
+
+## Fase 27 — Outcome-Based Scoring Calibration
+
+Completada: outcomes y objeciones normalizadas, Outcome Logger en Call Queue/Lead Detail, métricas de embudo comercial, reporte `prospect:outcomes` y recomendaciones manuales. Próximo paso recomendado: export/import explícito de snapshot CRM para que la CLI use los outcomes guardados en `localStorage` sin intervención manual.

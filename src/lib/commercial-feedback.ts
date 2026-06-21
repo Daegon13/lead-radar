@@ -1,161 +1,18 @@
-import { getEffectivePriority, scoreLead } from "@/lib/scoring";
-import type { Lead, LeadOutcomeType, Priority } from "@/types/lead";
+import { getEffectivePriority, hasPublicContact, scoreLead } from "./scoring";
+import { getOutcomeEvents, OBJECTION_DEFINITIONS, outcomeCountsAsAnswered, outcomeCountsAsInterest, outcomeCountsAsProgress } from "./outcomes";
+import { isCallableLead } from "./prospecting/callable-lead";
+import type { Lead, LeadObjectionType, LeadOutcomeType, Priority } from "../types/lead";
 
-export const RESPONSE_OUTCOMES = new Set<LeadOutcomeType>([
-  "answered_not_interested",
-  "interested",
-  "meeting_booked",
-  "proposal_requested",
-  "won",
-  "lost",
-]);
-
-export const INTEREST_OUTCOMES = new Set<LeadOutcomeType>([
-  "interested",
-  "meeting_booked",
-  "proposal_requested",
-  "won",
-]);
-
-export type RankedSegment = {
-  name: string;
-  leads: number;
-  attempts: number;
-  responses: number;
-  interested: number;
-  responseRate: number;
-  interestRate: number;
-};
-
-export type CommercialFeedbackStats = {
-  leadsByPriority: Record<Priority, number>;
-  totalContactAttempts: number;
-  contactedLeads: number;
-  responseRate: number;
-  interestRate: number;
-  bestCategories: RankedSegment[];
-  bestLocations: RankedSegment[];
-  frequentObjections: Array<{ objection: string; count: number }>;
-};
-
-function emptyPriorityCounts(): Record<Priority, number> {
-  return { A: 0, B: 0, C: 0, D: 0 };
-}
-
-function getOutcomeEvents(lead: Lead) {
-  const history = lead.outcomeHistory ?? [];
-
-  if (history.length > 0) {
-    return history;
-  }
-
-  return lead.lastOutcome ? [lead.lastOutcome] : [];
-}
-
-function calculateRate(numerator: number, denominator: number): number {
-  if (denominator === 0) {
-    return 0;
-  }
-
-  return Math.round((numerator / denominator) * 100);
-}
-
-function buildRankedSegments(leads: Lead[], getSegment: (lead: Lead) => string): RankedSegment[] {
-  const segments = new Map<string, Omit<RankedSegment, "responseRate" | "interestRate">>();
-
-  for (const lead of leads) {
-    const name = getSegment(lead).trim() || "Sin dato";
-    const current = segments.get(name) ?? { name, leads: 0, attempts: 0, responses: 0, interested: 0 };
-    const outcomeEvents = getOutcomeEvents(lead);
-    const attempts = lead.contactAttempts ?? outcomeEvents.length;
-    const responses = outcomeEvents.filter((event) => RESPONSE_OUTCOMES.has(event.outcome)).length;
-    const interested = outcomeEvents.filter((event) => INTEREST_OUTCOMES.has(event.outcome)).length;
-
-    segments.set(name, {
-      ...current,
-      leads: current.leads + 1,
-      attempts: current.attempts + attempts,
-      responses: current.responses + responses,
-      interested: current.interested + interested,
-    });
-  }
-
-  return Array.from(segments.values())
-    .map((segment) => ({
-      ...segment,
-      responseRate: calculateRate(segment.responses, segment.attempts),
-      interestRate: calculateRate(segment.interested, segment.attempts),
-    }))
-    .filter((segment) => segment.attempts > 0)
-    .sort((a, b) => b.interestRate - a.interestRate || b.responseRate - a.responseRate || b.attempts - a.attempts)
-    .slice(0, 5);
-}
-
-function extractFrequentObjections(leads: Lead[]): Array<{ objection: string; count: number }> {
-  const counts = new Map<string, number>();
-  const patterns = [
-    "precio",
-    "caro",
-    "no tengo tiempo",
-    "sin tiempo",
-    "ya tengo web",
-    "tengo web",
-    "no me interesa",
-    "no necesita",
-    "llamame después",
-    "mandame info",
-    "presupuesto",
-  ];
-
-  for (const lead of leads) {
-    const text = [lead.notes, lead.objectionHint, ...(lead.outcomeHistory ?? []).map((event) => event.note)]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    for (const pattern of patterns) {
-      if (text.includes(pattern)) {
-        counts.set(pattern, (counts.get(pattern) ?? 0) + 1);
-      }
-    }
-  }
-
-  return Array.from(counts.entries())
-    .map(([objection, count]) => ({ objection, count }))
-    .sort((a, b) => b.count - a.count || a.objection.localeCompare(b.objection))
-    .slice(0, 6);
-}
-
-export function calculateCommercialFeedbackStats(leads: Lead[]): CommercialFeedbackStats {
-  const leadsByPriority = emptyPriorityCounts();
-  let totalContactAttempts = 0;
-  let contactedLeads = 0;
-  let responses = 0;
-  let interested = 0;
-
-  for (const lead of leads) {
-    leadsByPriority[getEffectivePriority(lead, scoreLead(lead))] += 1;
-
-    const outcomeEvents = getOutcomeEvents(lead);
-    const attempts = lead.contactAttempts ?? outcomeEvents.length;
-    totalContactAttempts += attempts;
-
-    if (attempts > 0) {
-      contactedLeads += 1;
-    }
-
-    responses += outcomeEvents.filter((event) => RESPONSE_OUTCOMES.has(event.outcome)).length;
-    interested += outcomeEvents.filter((event) => INTEREST_OUTCOMES.has(event.outcome)).length;
-  }
-
-  return {
-    leadsByPriority,
-    totalContactAttempts,
-    contactedLeads,
-    responseRate: calculateRate(responses, totalContactAttempts),
-    interestRate: calculateRate(interested, totalContactAttempts),
-    bestCategories: buildRankedSegments(leads, (lead) => lead.category),
-    bestLocations: buildRankedSegments(leads, (lead) => lead.location),
-    frequentObjections: extractFrequentObjections(leads),
-  };
-}
+export type RankedSegment = { name: string; leads: number; attempts: number; answered: number; interested: number; meetings: number; proposals: number; won: number; noAnswer: number; wrongContact: number; doNotContact: number; answeredRate: number; interestRate: number; meetingRate: number; proposalRate: number; closeRate: number; noAnswerRate: number; wrongContactRate: number; doNotContactRate: number; alreadyHasProviderRate: number; noBudgetRate: number };
+export type CommercialFeedbackStats = { leadsByPriority: Record<Priority, number>; totalContactAttempts: number; contactedLeads: number; answeredRate: number; responseRate: number; interestRate: number; meetingRate: number; proposalRate: number; closeRate: number; noAnswerRate: number; wrongContactRate: number; doNotContactRate: number; alreadyHasProviderRate: number; noBudgetRate: number; outcomeCounts: Record<LeadOutcomeType, number>; funnel: { called: number; answered: number; interested: number; meetings: number; proposals: number; won: number }; bestSources: RankedSegment[]; bestCategories: RankedSegment[]; bestLocations: RankedSegment[]; bestZones: RankedSegment[]; bestPriorities: RankedSegment[]; callableSegments: RankedSegment[]; gapSegments: RankedSegment[]; frequentObjections: Array<{ objection: string; label: string; count: number }>; recommendations: string[] };
+const OUTCOMES: LeadOutcomeType[] = ["not_contacted","called_no_answer","wrong_number","answered_not_interested","answered_send_info","interested","meeting_booked","proposal_requested","proposal_sent","won","lost","do_not_contact"];
+function emptyPriorityCounts(): Record<Priority, number> { return { A: 0, B: 0, C: 0, D: 0 }; }
+function rate(n: number, d: number): number { return d === 0 ? 0 : Math.round((n / d) * 100); }
+function emptySegment(name: string): Omit<RankedSegment, "answeredRate"|"interestRate"|"meetingRate"|"proposalRate"|"closeRate"|"noAnswerRate"|"wrongContactRate"|"doNotContactRate"|"alreadyHasProviderRate"|"noBudgetRate"> & { alreadyHasProvider: number; noBudget: number } { return { name, leads: 0, attempts: 0, answered: 0, interested: 0, meetings: 0, proposals: 0, won: 0, noAnswer: 0, wrongContact: 0, doNotContact: 0, alreadyHasProvider: 0, noBudget: 0 }; }
+function finalize(s: ReturnType<typeof emptySegment>): RankedSegment { return { ...s, answeredRate: rate(s.answered, s.attempts), interestRate: rate(s.interested, s.attempts), meetingRate: rate(s.meetings, s.attempts), proposalRate: rate(s.proposals, s.attempts), closeRate: rate(s.won, s.attempts), noAnswerRate: rate(s.noAnswer, s.attempts), wrongContactRate: rate(s.wrongContact, s.attempts), doNotContactRate: rate(s.doNotContact, s.attempts), alreadyHasProviderRate: rate(s.alreadyHasProvider, s.attempts), noBudgetRate: rate(s.noBudget, s.attempts) }; }
+function addLead(s: ReturnType<typeof emptySegment>, lead: Lead) { const events = getOutcomeEvents(lead); s.leads += 1; s.attempts += lead.contactAttempts ?? events.filter(e => e.outcome !== "not_contacted").length; for (const e of events) { if (outcomeCountsAsAnswered(e.outcome)) s.answered += 1; if (outcomeCountsAsInterest(e.outcome)) s.interested += 1; if (e.outcome === "meeting_booked") s.meetings += 1; if (e.outcome === "proposal_requested" || e.outcome === "proposal_sent") s.proposals += 1; if (e.outcome === "won") s.won += 1; if (e.outcome === "called_no_answer") s.noAnswer += 1; if (e.outcome === "wrong_number") s.wrongContact += 1; if (e.outcome === "do_not_contact") s.doNotContact += 1; if (e.objection === "already_has_provider") s.alreadyHasProvider += 1; if (e.objection === "no_budget") s.noBudget += 1; } for (const o of lead.objectionHistory ?? []) { if (o.objection === "already_has_provider") s.alreadyHasProvider += 1; if (o.objection === "no_budget") s.noBudget += 1; } }
+function buildRankedSegments(leads: Lead[], getSegment: (lead: Lead) => string): RankedSegment[] { const segments = new Map<string, ReturnType<typeof emptySegment>>(); for (const lead of leads) { const name = getSegment(lead).trim() || "Sin dato"; const cur = segments.get(name) ?? emptySegment(name); addLead(cur, lead); segments.set(name, cur); } return Array.from(segments.values()).map(finalize).filter(s=>s.attempts>0).sort((a,b)=>b.interestRate-a.interestRate || b.answeredRate-a.answeredRate || b.attempts-a.attempts).slice(0,10); }
+function objections(leads: Lead[]): Array<{ objection: string; label: string; count: number }> { const counts = new Map<LeadObjectionType, number>(); for (const lead of leads) { if (lead.lastObjection) counts.set(lead.lastObjection, (counts.get(lead.lastObjection) ?? 0) + 1); for (const event of lead.objectionHistory ?? []) counts.set(event.objection, (counts.get(event.objection) ?? 0) + 1); for (const event of getOutcomeEvents(lead)) if (event.objection) counts.set(event.objection, (counts.get(event.objection) ?? 0) + 1); } return Array.from(counts.entries()).map(([objection,count])=>({ objection, label: OBJECTION_DEFINITIONS[objection].label, count })).sort((a,b)=>b.count-a.count || a.label.localeCompare(b.label)).slice(0,10); }
+function makeRecommendations(stats: Pick<CommercialFeedbackStats,"bestSources"|"bestCategories"|"bestLocations"|"callableSegments"|"frequentObjections">): string[] { const r:string[]=[]; const topSource=stats.bestSources[0]; if (topSource) r.push(`${topSource.name}: ${topSource.interestRate >= 30 ? "subir peso/repetir fuente" : "revisar fuente"}; ${topSource.answeredRate}% respuesta y ${topSource.interestRate}% interés.`); for (const source of stats.bestSources.filter(s=>s.attempts>=3 && s.answeredRate<20).slice(0,2)) r.push(`${source.name}: alto volumen relativo con baja respuesta; mejorar data pack/contactabilidad antes de repetir.`); const topCat=stats.bestCategories[0]; if (topCat) r.push(`${topCat.name}: ajustar ICP según ${topCat.interestRate}% de interés y ${topCat.meetingRate}% de reuniones.`); const topZone=stats.bestLocations[0]; if (topZone) r.push(`${topZone.name}: zona candidata para repetir job si hay reuniones/interés consistente.`); const callable=stats.callableSegments.find(s=>s.name==="Callable"); if (callable && callable.attempts >= 3 && callable.interestRate < 15) r.push("Callable leads no convierten lo suficiente: revisar pitch, señales de gap o definición de callable antes de subir volumen."); const obj=stats.frequentObjections[0]; if (obj) r.push(`${obj.label}: objeción más frecuente; ajustar apertura y tags para anticiparla.`); if (!r.length) r.push("Sin outcomes suficientes: registrar llamadas desde Call Queue antes de calibrar scoring."); return r; }
+export function calculateCommercialFeedbackStats(leads: Lead[]): CommercialFeedbackStats { const leadsByPriority = emptyPriorityCounts(); const outcomeCounts = Object.fromEntries(OUTCOMES.map(o=>[o,0])) as Record<LeadOutcomeType, number>; const total = emptySegment("Total"); for (const lead of leads) { leadsByPriority[getEffectivePriority(lead, scoreLead(lead))] += 1; addLead(total, lead); for (const e of getOutcomeEvents(lead)) outcomeCounts[e.outcome] += 1; } const f=finalize(total); const bestSources=buildRankedSegments(leads, l=>l.source ?? "manual/local"); const frequentObjections=objections(leads); const stats: CommercialFeedbackStats = { leadsByPriority, totalContactAttempts: f.attempts, contactedLeads: leads.filter(l=>(l.contactAttempts ?? 0)>0 || getOutcomeEvents(l).length>0).length, answeredRate: f.answeredRate, responseRate: f.answeredRate, interestRate: f.interestRate, meetingRate: f.meetingRate, proposalRate: f.proposalRate, closeRate: f.closeRate, noAnswerRate: f.noAnswerRate, wrongContactRate: f.wrongContactRate, doNotContactRate: f.doNotContactRate, alreadyHasProviderRate: f.alreadyHasProviderRate, noBudgetRate: f.noBudgetRate, outcomeCounts, funnel: { called: f.attempts, answered: f.answered, interested: f.interested, meetings: f.meetings, proposals: f.proposals, won: f.won }, bestSources, bestCategories: buildRankedSegments(leads, l=>l.category), bestLocations: buildRankedSegments(leads, l=>l.location), bestZones: buildRankedSegments(leads, l=>l.address?.split(",").slice(-2,-1)[0]?.trim() || l.location), bestPriorities: buildRankedSegments(leads, l=>`Prioridad ${getEffectivePriority(l, scoreLead(l))}`), callableSegments: buildRankedSegments(leads, l=>isCallableLead(l) ? "Callable" : hasPublicContact(l) ? "Contactable no callable" : "Non-callable"), gapSegments: buildRankedSegments(leads, l=>l.digitalPresenceQuality), frequentObjections, recommendations: [] }; stats.recommendations = makeRecommendations(stats); return stats; }
+export { outcomeCountsAsProgress };
