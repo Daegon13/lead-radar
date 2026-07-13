@@ -12,7 +12,9 @@
     "prospect:real:osm": "npm run prospect:run -- --jobId osm-mvd-odontologia-pocitos",
     "prospect:real:mvd": "npm run prospect:run -- --jobId mvd-odontologia-multisource-v1",
     "prospect:yield": "jiti scripts/yield-calibration-report.ts",
-    "prospect:outcomes": "jiti scripts/outcome-calibration-report.ts"
+    "prospect:outcomes": "jiti scripts/outcome-calibration-report.ts",
+    "prospect:doctor": "jiti scripts/prospect-doctor.ts",
+    "prospect:smoke": "jiti scripts/prospect-smoke.ts"
   },
   "dependencies": {
     "next": "16.2.4",

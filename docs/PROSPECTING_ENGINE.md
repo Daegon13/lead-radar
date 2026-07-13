@@ -545,3 +545,28 @@ La cache OSM vive en `exports/source-cache/osm-overpass/<cacheKey>/latest.json` 
 ## Fase 26: calibración de yield
 
 El motor calcula métricas de yield por corrida y fuente: leads con teléfono/email/web/social, leads sin web, contacto disponible, callable leads, callable rate, contactability rate, digital gap rate, priority A/B rate, source failure rate, skipped/invalid sources y `sourceYieldScore`. La UI de Run History y Review Ops muestra estas métricas y permite filtrar/importar `callable A/B`.
+
+## Fase urgente — Safety & Runtime Guards
+
+`prospect:schedule` es seguro por defecto: no permite `--all` sin `--confirmAll true`, limita a 3 jobs cuando no hay confirmación explícita, corre con concurrencia 1 y aplica timeout global por job.
+
+Comandos seguros:
+
+```bash
+npm run prospect:doctor
+npm run prospect:smoke
+npm run prospect:schedule -- --dryRun
+npm run prospect:schedule -- --maxJobs 1 --skipRemote true
+```
+
+Comandos pesados o de riesgo controlado:
+
+```bash
+npm run prospect:schedule -- --all --confirmAll true --dryRun
+npm run prospect:schedule -- --only <jobId> --maxJobs 1 --timeoutMs 30000
+npm run prospect:run -- --jobId <osm-job-id> --forceRefresh true
+```
+
+Para correr OSM real, ejecutar de a un job con bbox registrado, `limit <= 100`, timeout explícito y preferentemente primero `--dryRun`. No correr `schedule --all` real durante esta fase.
+
+Si una corrida parece colgada: interrumpir el proceso, volver a ejecutar `npm run prospect:doctor`, revisar `exports/prospecting-schedule/<job>/<fecha>/run-summary.json` y limpiar solo cachés regenerables como `.next/cache` o `exports/source-cache/osm-overpass` si se sospecha cache corrupta.

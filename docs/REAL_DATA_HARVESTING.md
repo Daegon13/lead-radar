@@ -68,3 +68,20 @@ Si falta un archivo local, la fuente se reporta como error parcial/request_faile
 ## Fase 26: calidad real y yield
 
 Antes de ejecutar proveedores locales se valida el data pack: existencia, extensión esperada, JSON/CSV parseable, no vacío, nombre/equivalente, categoría inferible por registro o job, ubicación/city y trazabilidad si existe. Archivos opcionales faltantes quedan como `skipped_source`; archivos presentes rotos quedan como `invalid_source`.
+
+## Safety runtime para datos reales
+
+Antes de cualquier fuente real:
+
+```bash
+npm run prospect:doctor
+npm run prospect:schedule -- --dryRun
+```
+
+OSM Overpass real debe correrse de a uno:
+
+```bash
+npm run prospect:schedule -- --only osm-mvd-odontologia-pocitos --maxJobs 1 --timeoutMs 30000
+```
+
+Usar `--skipRemote true` para validar agenda y exports sin tocar fuentes remotas. `--all` requiere `--confirmAll true`; no usarlo para corridas reales salvo revisión manual previa y dry-run exitoso.

@@ -129,3 +129,13 @@ Una feature está done cuando:
 - Metrics muestra embudo, tasas, segmentos, objeciones y recomendaciones.
 - `npm run prospect:outcomes` genera JSON/CSV aun sin outcomes reales.
 - El scoring no cambia pesos automáticamente; solo se proponen ajustes manuales.
+
+## Criterios Safety & Runtime Guards
+
+- `prospect:schedule` no dispara todos los jobs remotos por accidente: `--all` exige `--confirmAll true`.
+- Existen `--dryRun`, `--maxJobs`, `--only`, `--skipRemote true`, `--concurrency` y `--timeoutMs`.
+- Cada job tiene timeout global y las fuentes remotas reciben señal de abort.
+- OSM Overpass exige bbox, limita `limit <= 100`, usa `AbortController` y reporta timeout/request_failed sin dejar fetch vivo.
+- Run History lista por defecto hasta 100 corridas y no lee leads exportados en la lista general.
+- `prospect:doctor` diagnostica riesgos sin fuentes remotas.
+- `prospect:smoke` valida provider contract y un job local demo sin OSM real ni schedule all.

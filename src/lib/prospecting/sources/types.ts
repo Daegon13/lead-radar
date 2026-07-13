@@ -32,6 +32,7 @@ export type DataSourceInput = {
   cacheKey?: string;
   cacheTtlMs?: number;
   forceRefresh?: boolean;
+  signal?: AbortSignal;
 };
 
 export type DataSourceResult = {
