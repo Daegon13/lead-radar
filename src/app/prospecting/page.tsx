@@ -236,19 +236,22 @@ export default function ProspectingPage() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
-    fetch("/api/prospecting/jobs")
+    fetch("/api/prospecting/jobs", { signal: controller.signal })
       .then(async (response) => {
         const payload = (await response.json()) as { jobs?: ProspectingJobDefinition[]; error?: string };
         if (!response.ok) throw new Error(payload.error ?? "No se pudo cargar el registro de jobs.");
         if (!cancelled) setJobs(payload.jobs ?? []);
       })
       .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
         if (!cancelled) setJobListError(error instanceof Error ? error.message : "No se pudo cargar el registro de jobs.");
       });
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, []);
 

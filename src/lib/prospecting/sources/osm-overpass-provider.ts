@@ -120,7 +120,10 @@ export const osmOverpassProvider: DataSourceProvider = {
     const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
     const timeoutMs = Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const abortFromParent = () => controller.abort(input.signal?.reason);
+    if (input.signal?.aborted) abortFromParent();
+    else input.signal?.addEventListener("abort", abortFromParent, { once: true });
+    const timeout = setTimeout(() => controller.abort(new Error(`timeout: Overpass request timed out after ${timeoutMs}ms.`)), timeoutMs);
     try {
       const cacheInput = { ...input, limit, timeoutMs };
       const cached = await readCachedPayload(cacheInput, Date.now());
@@ -144,7 +147,7 @@ export const osmOverpassProvider: DataSourceProvider = {
       const warnings = elements.length === 0 ? ["empty_result: OSM Overpass no devolvió resultados para este bbox/rubro; puede ser cobertura incompleta o filtro demasiado estricto.", cacheWarning] : ["success: OSM Overpass es fuente comunitaria: teléfono, web, rubro y dirección pueden estar incompletos.", cacheWarning];
       return { sourceId: this.id, sourceLabel: input.sourceLabel ?? `OSM REAL — ${this.label}`, checkedAt, input, rawProspects: elements.map((element) => elementToProspect(element, checkedAt, input)), warnings, errors: [], status: elements.length === 0 ? "empty_result" : "success" };
     } catch (error) {
-      const isTimeout = error instanceof Error && error.name === "AbortError";
+      const isTimeout = (error instanceof Error && error.name === "AbortError") || controller.signal.aborted;
       const status = isTimeout ? "timeout" : "request_failed";
       const message = isTimeout
         ? `timeout: Overpass request timed out after ${timeoutMs}ms.`
@@ -163,6 +166,7 @@ export const osmOverpassProvider: DataSourceProvider = {
       };
     } finally {
       clearTimeout(timeout);
+      input.signal?.removeEventListener("abort", abortFromParent);
     }
   },
 };

@@ -68,3 +68,16 @@ Cafe Central,Cafetería,CABA,Av. Siempre Viva 123,4.6,120,true,https://cafecentr
 - `phone` / `telefono` → `phone`
 - `reviewCount` / `reviews` → `reviewCount`
 - `createdAt`, `updatedAt`, `status`, `nextAction`, `notes`, etc. mantienen el mismo nombre
+
+## Prospecting seguro local
+
+Comandos recomendados para validar sin fuentes reales:
+
+```bash
+npm run prospect:doctor
+npm run prospect:smoke
+npm run prospect:schedule -- --dryRun
+npm run prospect:schedule -- --maxJobs 1 --skipRemote true
+```
+
+No ejecutar `npm run prospect:schedule -- --all` para datos reales: ahora requiere `--confirmAll true` y debe probarse antes con `--dryRun`. Para OSM real, usar un único job (`--only <jobId>`), `--maxJobs 1` y `--timeoutMs` explícito.

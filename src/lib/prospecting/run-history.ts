@@ -2,6 +2,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getEnabledProspectingJobs } from "./jobs/registry";
+import { PROSPECTING_RUNTIME_LIMITS, clampPositiveInteger } from "./runtime-guards";
 import type { AcquisitionSourceSummary } from "./run-prospecting-job";
 import type { Lead, Priority } from "@/types/lead";
 
@@ -174,29 +175,32 @@ function toEntry(summaryPath: string, summary: RawRunSummary, reviewState?: RunR
   };
 }
 
-async function findSummaryPaths(): Promise<string[]> {
+async function findSummaryPaths(limit: number = PROSPECTING_RUNTIME_LIMITS.defaultRunHistoryLimit): Promise<string[]> {
   const jobDirs = await readdir(RUNS_ROOT, { withFileTypes: true }).catch(() => []);
   const paths: string[] = [];
   for (const jobDir of jobDirs.filter((entry) => entry.isDirectory())) {
     const directSummaryPath = path.join(RUNS_ROOT, jobDir.name, "run-summary.json");
     paths.push(directSummaryPath);
+    if (paths.length >= limit) return paths;
     const children = await readdir(path.join(RUNS_ROOT, jobDir.name), { withFileTypes: true }).catch(() => []);
     for (const child of children.filter((entry) => entry.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(entry.name))) {
       paths.push(path.join(RUNS_ROOT, jobDir.name, child.name, "run-summary.json"));
+      if (paths.length >= limit) return paths;
     }
   }
   return paths;
 }
 
-export async function listRunHistory(): Promise<RunHistoryEntry[]> {
-  const summaryPaths = await findSummaryPaths();
+export async function listRunHistory(options: { limit?: number } = {}): Promise<RunHistoryEntry[]> {
+  const limit = clampPositiveInteger(options.limit, PROSPECTING_RUNTIME_LIMITS.defaultRunHistoryLimit, PROSPECTING_RUNTIME_LIMITS.maxRunHistoryLimit);
+  const summaryPaths = await findSummaryPaths(limit);
   const runs = await Promise.all(summaryPaths.map(async (summaryPath) => {
     const summary = await readJsonFile<RawRunSummary>(summaryPath);
     if (!summary) return null;
     const reviewState = (await readJsonFile<RunReviewState>(path.join(path.dirname(summaryPath), "review-state.json"))) ?? undefined;
     return toEntry(summaryPath, summary, reviewState);
   }));
-  return runs.filter((run): run is RunHistoryEntry => Boolean(run)).sort((a, b) => Date.parse(b.runStartedAt ?? "") - Date.parse(a.runStartedAt ?? ""));
+  return runs.filter((run): run is RunHistoryEntry => Boolean(run)).sort((a, b) => Date.parse(b.runStartedAt ?? "") - Date.parse(a.runStartedAt ?? "")).slice(0, limit);
 }
 
 export async function getRunHistoryDetail(runId: string): Promise<RunHistoryDetail | null> {

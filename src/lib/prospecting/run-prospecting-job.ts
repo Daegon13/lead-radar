@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { dedupeProspects } from "./dedupe";
 import { getDataSourceProvider, type DataSourceInput } from "./sources";
+import { PROSPECTING_RUNTIME_LIMITS, clampPositiveInteger, isRemoteProviderId } from "./runtime-guards";
 import { validateDataPack } from "./data-pack-validator";
 import { isCallableLead } from "./callable-lead";
 import { capPriorityForContactability } from "../scoring";
@@ -27,6 +28,9 @@ export type ProspectRunOptions = {
   outputName?: string;
   sources?: DataSourceInput[];
   forceRefresh?: boolean;
+  skipRemote?: boolean;
+  timeoutMs?: number;
+  signal?: AbortSignal;
 };
 
 const FIELD_ALIASES = {
@@ -238,7 +242,7 @@ function getSourceInputs(options: ProspectRunOptions): DataSourceInput[] {
     : [{ id: canonicalProviderId(options.provider, options.format), input: options.input, format: options.format, country: options.country, city: options.city, category: options.category, limit: options.limit }];
 }
 
-async function loadProviderSource(sourceInput: DataSourceInput, options: ProspectRunOptions): Promise<LoadedSourceRecords> {
+async function loadProviderSource(sourceInput: DataSourceInput, options: ProspectRunOptions, signal?: AbortSignal): Promise<LoadedSourceRecords> {
   const startedAt = Date.now();
   const providerId = sourceInputProviderId(sourceInput, options);
   const provider = getDataSourceProvider(providerId);
@@ -246,13 +250,16 @@ async function loadProviderSource(sourceInput: DataSourceInput, options: Prospec
 
   try {
     if (!provider) throw new Error(`Unknown data source provider: ${providerId}`);
+    if (options.skipRemote && (provider.capabilities.includes("http-api") || isRemoteProviderId(providerId))) {
+      return { records: [], normalized: [], summary: { sourceId: providerId, sourceLabel, recordsRead: 0, recordsAccepted: 0, recordsRejected: 0, warnings: ["skipped_source: fuente remota omitida por --skipRemote true."], errors: [], durationMs: Date.now() - startedAt, status: "skipped_source" } };
+    }
     if (provider.capabilities.includes("local-file")) {
       const validation = await validateDataPack({ ...sourceInput, format: sourceInput.format ?? options.format });
       if (validation.status === "skipped_source" || validation.status === "invalid_source") {
         return { records: [], normalized: [], summary: { sourceId: providerId, sourceLabel, recordsRead: 0, recordsAccepted: 0, recordsRejected: 0, warnings: validation.warnings, errors: validation.errors, durationMs: Date.now() - startedAt, status: validation.status } };
       }
     }
-    const result = await provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit, forceRefresh: sourceInput.forceRefresh ?? options.forceRefresh });
+    const result = await provider.run({ ...sourceInput, format: sourceInput.format ?? options.format, country: sourceInput.country ?? options.country, city: sourceInput.city ?? options.city, category: sourceInput.category ?? options.category, limit: sourceInput.limit ?? options.limit, forceRefresh: sourceInput.forceRefresh ?? options.forceRefresh, timeoutMs: sourceInput.timeoutMs ?? options.timeoutMs, signal });
     const records = result.rawProspects as RawRecord[];
     const filtered = records.filter(
       (record) =>
@@ -295,9 +302,9 @@ async function loadProviderSource(sourceInput: DataSourceInput, options: Prospec
   }
 }
 
-async function loadProviderRecords(options: ProspectRunOptions): Promise<LoadedSourceRecords[]> {
+async function loadProviderRecords(options: ProspectRunOptions, signal?: AbortSignal): Promise<LoadedSourceRecords[]> {
   const sourceInputs = getSourceInputs(options);
-  return Promise.all(sourceInputs.map((sourceInput) => loadProviderSource(sourceInput, options)));
+  return Promise.all(sourceInputs.map((sourceInput) => loadProviderSource(sourceInput, options, signal)));
 }
 
 export type ProspectRunSummary = AcquisitionRunSummary & {
@@ -342,7 +349,24 @@ function enrichSourcesWithYield(sources: AcquisitionSourceSummary[], leads: Lead
 export async function runProspecting(options: ProspectRunOptions): Promise<ProspectRunSummary> {
   const runStartedAt = new Date().toISOString();
   const startedMs = Date.now();
-  const sourceResults = await loadProviderRecords(options);
+  const timeoutMs = clampPositiveInteger(options.timeoutMs, PROSPECTING_RUNTIME_LIMITS.defaultJobTimeoutMs, PROSPECTING_RUNTIME_LIMITS.maxJobTimeoutMs);
+  const controller = new AbortController();
+  const abortFromParent = () => controller.abort(options.signal?.reason);
+  if (options.signal?.aborted) abortFromParent();
+  else options.signal?.addEventListener("abort", abortFromParent, { once: true });
+  const timeout = setTimeout(() => controller.abort(new Error(`job_failed_timeout: job exceeded ${timeoutMs}ms`)), timeoutMs);
+  let sourceResults: LoadedSourceRecords[];
+  try {
+    sourceResults = await Promise.race([
+      loadProviderRecords(options, controller.signal),
+      new Promise<LoadedSourceRecords[]>((_, reject) => {
+        controller.signal.addEventListener("abort", () => reject(controller.signal.reason instanceof Error ? controller.signal.reason : new Error(`job_failed_timeout: job exceeded ${timeoutMs}ms`)), { once: true });
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abortFromParent);
+  }
   let sources = sourceResults.map((result) => result.summary);
   const errors = sources.flatMap((source) => source.errors.map((error) => `${source.sourceLabel}: ${error}`));
   const warnings = sources.flatMap((source) => source.warnings.map((warning) => `${source.sourceLabel}: ${warning}`));
